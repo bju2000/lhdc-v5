@@ -267,7 +267,7 @@ static std::string lhdcV3_QualityModeBitRate_toString(uint32_t value) {
   case A2DP_LHDC_QUALITY_HIGH:
     return "HIGH (900 Kbps)";
   case A2DP_LHDC_QUALITY_MID:
-    return "MID (600 Kbps)";
+    return "MID (500 Kbps)";
   case A2DP_LHDC_QUALITY_LOW:
     return "LOW (400 Kbps)";
   case A2DP_LHDC_QUALITY_LOW4:

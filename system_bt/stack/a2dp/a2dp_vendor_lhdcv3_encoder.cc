@@ -488,7 +488,7 @@ static void a2dp_vendor_lhdcv3_encoder_update(uint16_t peer_mtu,
   }
   const uint8_t* p_codec_info = codec_info;
   btav_a2dp_codec_config_t codec_config = a2dp_codec_config->getCodecConfig();
-  btav_a2dp_codec_config_t codec_config_user = a2dp_codec_config->getCodecUserConfig();
+  //btav_a2dp_codec_config_t codec_config_user = a2dp_codec_config->getCodecUserConfig();
 
   uint32_t verCode = A2DP_VendorGetVersionLhdcV3(p_codec_info);  //LHDC V3 should 1!
 
@@ -509,7 +509,7 @@ static void a2dp_vendor_lhdcv3_encoder_update(uint16_t peer_mtu,
         // High1(1000K) does not supported here, reset to High(900K)
         newValue = LHDCBT_QUALITY_HIGH; //8->7
         codec_config.codec_specific_1 = A2DP_LHDC_QUALITY_MAGIC_NUM | A2DP_LHDC_QUALITY_HIGH;
-        codec_config_user.codec_specific_1 = A2DP_LHDC_QUALITY_MAGIC_NUM | A2DP_LHDC_QUALITY_HIGH;
+        //codec_config_user.codec_specific_1 = A2DP_LHDC_QUALITY_MAGIC_NUM | A2DP_LHDC_QUALITY_HIGH;
       }
 
       if (newValue != p_encoder_params->quality_mode_index) {
@@ -521,7 +521,7 @@ static void a2dp_vendor_lhdcv3_encoder_update(uint16_t peer_mtu,
   }else {
       p_encoder_params->quality_mode_index = LHDCBT_QUALITY_LOW;
       codec_config.codec_specific_1 = A2DP_LHDC_QUALITY_MAGIC_NUM | A2DP_LHDC_QUALITY_LOW;
-      codec_config_user.codec_specific_1 = A2DP_LHDC_QUALITY_MAGIC_NUM | A2DP_LHDC_QUALITY_LOW;
+      //codec_config_user.codec_specific_1 = A2DP_LHDC_QUALITY_MAGIC_NUM | A2DP_LHDC_QUALITY_LOW;
   }
 
   if (!a2dp_lhdc_encoder_cb.has_lhdc_handle) {
@@ -725,7 +725,17 @@ static void a2dp_lhdcv3_get_num_frame_iteration(uint8_t* num_of_iterations,
   uint32_t result = 0;
   uint8_t nof = 0;
   uint8_t noi = 1;
-  uint32_t pcm_bytes_per_frame = lhdc_get_block_size(a2dp_lhdc_encoder_cb.lhdc_handle) *
+
+  *num_of_iterations = 0;
+  *num_of_frames = 0;
+
+  int32_t pcm_bytes_per_frame = lhdc_get_block_size(a2dp_lhdc_encoder_cb.lhdc_handle);
+  if (pcm_bytes_per_frame <= 0) {
+    LOG_DEBUG( "%s: lhdc_get_block_size error!", __func__);
+    return;
+  }
+
+  pcm_bytes_per_frame = pcm_bytes_per_frame *
   a2dp_lhdc_encoder_cb.feeding_params.channel_count *
   a2dp_lhdc_encoder_cb.feeding_params.bits_per_sample / 8;
   LOG_DEBUG( "%s: pcm_bytes_per_frame %u", __func__, pcm_bytes_per_frame);
@@ -772,6 +782,11 @@ static void a2dp_lhdcV3_encode_frames(uint8_t nb_frame){
   //tA2DP_LHDC_ENCODER_PARAMS* p_encoder_params =
   //    &a2dp_lhdc_encoder_cb.lhdc_encoder_params;
   int32_t samples_per_frame = lhdc_get_block_size(a2dp_lhdc_encoder_cb.lhdc_handle);
+  if (samples_per_frame <= 0) {
+    LOG_ERROR ("%s: lhdc_get_block_size error!", __func__);
+    return;
+  }
+
   uint32_t pcm_bytes_per_frame = samples_per_frame *
                                  a2dp_lhdc_encoder_cb.feeding_params.channel_count *
                                  a2dp_lhdc_encoder_cb.feeding_params.bits_per_sample / 8;
@@ -890,7 +905,13 @@ static void a2dp_lhdcV3_encode_frames(uint8_t nb_frame){
 
 static bool a2dp_lhdcv3_read_feeding(uint8_t* read_buffer, uint32_t *bytes_read) {
     uint32_t bytes_per_sample = a2dp_lhdc_encoder_cb.feeding_params.channel_count * a2dp_lhdc_encoder_cb.feeding_params.bits_per_sample / 8;
-    uint32_t read_size = lhdc_get_block_size(a2dp_lhdc_encoder_cb.lhdc_handle) * bytes_per_sample;
+  uint32_t read_size = 0;
+  int32_t read_size_tmp = lhdc_get_block_size(a2dp_lhdc_encoder_cb.lhdc_handle);
+  if (read_size_tmp <= 0) {
+    LOG_ERROR ("%s: lhdc_get_block_size error!", __func__);
+    return false;
+  }
+  read_size = read_size_tmp * bytes_per_sample;
 
   a2dp_lhdc_encoder_cb.stats.media_read_total_expected_reads_count++;
   a2dp_lhdc_encoder_cb.stats.media_read_total_expected_read_bytes += read_size;
@@ -949,7 +970,7 @@ void a2dp_vendor_lhdcv3_set_transmit_queue_length(size_t transmit_queue_length) 
   a2dp_lhdc_encoder_cb.TxQueueLength = transmit_queue_length;
   tA2DP_LHDC_ENCODER_PARAMS* p_encoder_params = &a2dp_lhdc_encoder_cb.lhdc_encoder_params;
   LOG_DEBUG( "%s: transmit_queue_length %zu", __func__, transmit_queue_length);
-  if (p_encoder_params->quality_mode_index == A2DP_LHDC_QUALITY_ABR) {
+  if (p_encoder_params->quality_mode_index == LHDCBT_QUALITY_AUTO) {
 	  LOG_DEBUG( "%s: Auto Bitrate Enabled!", __func__);
       if (lhdc_auto_adjust_bitrate != NULL) {
           lhdc_auto_adjust_bitrate(a2dp_lhdc_encoder_cb.lhdc_handle, transmit_queue_length);

@@ -589,7 +589,7 @@ static void a2dp_vendor_lhdcv5_encoder_update(uint16_t peer_mtu,
   p_codec_info = codec_info;
 
   btav_a2dp_codec_config_t codec_config = a2dp_codec_config->getCodecConfig();
-  btav_a2dp_codec_config_t codec_config_user = a2dp_codec_config->getCodecUserConfig();
+  //btav_a2dp_codec_config_t codec_config_user = a2dp_codec_config->getCodecUserConfig();
 
   // get version
   if (!A2DP_VendorGetVersionLhdcV5(&verCode, p_codec_info)) {
@@ -715,7 +715,7 @@ static void a2dp_vendor_lhdcv5_encoder_update(uint16_t peer_mtu,
   } else {
     //default: LOW (400 Kbps)
     codec_config.codec_specific_1 = A2DP_LHDC_QUALITY_MAGIC_NUM | A2DP_LHDCV5_QUALITY_LOW;
-    codec_config_user.codec_specific_1 = A2DP_LHDC_QUALITY_MAGIC_NUM | A2DP_LHDC_QUALITY_LOW;
+    //codec_config_user.codec_specific_1 = A2DP_LHDC_QUALITY_MAGIC_NUM | A2DP_LHDC_QUALITY_LOW;
 
     newValue_bt = A2DP_LHDCV5_QUALITY_LOW;
     if (!a2dp_vendor_lhdcv5_qualitymode_wrapper(&newValue_lib, newValue_bt)) {
@@ -1159,7 +1159,7 @@ static std::string quality_mode_index_to_name(uint32_t quality_mode_index) {
   case LHDCV5_QUALITY_HIGH:
     return "HIGH_900";
   case LHDCV5_QUALITY_MID:
-    return "MID_600";
+    return "MID_500";
   case LHDCV5_QUALITY_LOW:
     return "LOW_400";
   case LHDCV5_QUALITY_LOW4:

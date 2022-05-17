@@ -866,7 +866,7 @@ int A2DP_VendorGetBitRateLhdcV5(const uint8_t* p_codec_info) {
       case A2DP_LHDCV5_QUALITY_LOW:
         return 400000;
       case A2DP_LHDCV5_QUALITY_MID:
-        return 600000;
+        return 500000;
       case A2DP_LHDCV5_QUALITY_HIGH:
         return 900000;
       case A2DP_LHDCV5_QUALITY_ABR:
@@ -1131,8 +1131,8 @@ std::string A2DP_VendorCodecInfoStringLhdcV5(const uint8_t* p_codec_info) {
       "1000Kbps");
   AppendField(&field, ((lhdc_cie.maxTargetBitrate & A2DP_LHDCV5_MAX_BIT_RATE_MASK) == A2DP_LHDCV5_MAX_BIT_RATE_900K),
       "900Kbps");
-  AppendField(&field, ((lhdc_cie.maxTargetBitrate & A2DP_LHDCV5_MAX_BIT_RATE_MASK) == A2DP_LHDCV5_MAX_BIT_RATE_600K),
-      "600Kbps");
+  AppendField(&field, ((lhdc_cie.maxTargetBitrate & A2DP_LHDCV5_MAX_BIT_RATE_MASK) == A2DP_LHDCV5_MAX_BIT_RATE_500K),
+      "500Kbps");
   AppendField(&field, ((lhdc_cie.maxTargetBitrate & A2DP_LHDCV5_MAX_BIT_RATE_MASK) == A2DP_LHDCV5_MAX_BIT_RATE_400K),
       "400Kbps");
   res << "\tMax target-rate: " << field << " (" << loghex((lhdc_cie.maxTargetBitrate & A2DP_LHDCV5_MAX_BIT_RATE_MASK))
@@ -1522,7 +1522,7 @@ static bool A2DP_MaxBitRatetoQualityLevelLhdcV5(uint8_t *mode, uint8_t bitrate) 
   case A2DP_LHDCV5_MAX_BIT_RATE_900K:
     *mode = A2DP_LHDCV5_QUALITY_HIGH;
     return true;
-  case A2DP_LHDCV5_MAX_BIT_RATE_600K:
+  case A2DP_LHDCV5_MAX_BIT_RATE_500K:
     *mode = A2DP_LHDCV5_QUALITY_MID;
     return true;
   case A2DP_LHDCV5_MAX_BIT_RATE_400K:
@@ -1600,8 +1600,8 @@ static std::string lhdcV5_MaxTargetBitRate_toString(uint8_t value) {
   {
   case A2DP_LHDCV5_MAX_BIT_RATE_900K:
     return "900Kbps";
-  case A2DP_LHDCV5_MAX_BIT_RATE_600K:
-    return "600Kbps";
+  case A2DP_LHDCV5_MAX_BIT_RATE_500K:
+    return "500Kbps";
   case A2DP_LHDCV5_MAX_BIT_RATE_400K:
     return "400Kbps";
   case A2DP_LHDCV5_MAX_BIT_RATE_1000K:
@@ -1637,7 +1637,7 @@ static std::string lhdcV5_QualityModeBitRate_toString(uint8_t value) {
   case A2DP_LHDCV5_QUALITY_HIGH:
     return "HIGH (900 Kbps)";
   case A2DP_LHDCV5_QUALITY_MID:
-    return "MID (600 Kbps)";
+    return "MID (500 Kbps)";
   case A2DP_LHDCV5_QUALITY_LOW:
     return "LOW (400 Kbps)";
   case A2DP_LHDCV5_QUALITY_LOW4:
@@ -2655,7 +2655,7 @@ bool A2DP_VendorGetMaxBitRateLhdcV5(uint32_t *retval, const uint8_t* p_codec_inf
   case A2DP_LHDCV5_MAX_BIT_RATE_900K:
     *retval = (uint32_t)A2DP_LHDCV5_QUALITY_HIGH;
     return true;
-  case A2DP_LHDCV5_MAX_BIT_RATE_600K:
+  case A2DP_LHDCV5_MAX_BIT_RATE_500K:
     *retval = (uint32_t)A2DP_LHDCV5_QUALITY_MID;
     return true;
   case A2DP_LHDCV5_MAX_BIT_RATE_400K:

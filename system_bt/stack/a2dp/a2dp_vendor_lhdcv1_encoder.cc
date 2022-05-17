@@ -368,7 +368,7 @@ static void a2dp_vendor_lhdcV1_encoder_update(uint16_t peer_mtu,
   }
   const uint8_t* p_codec_info = codec_info;
   btav_a2dp_codec_config_t codec_config = a2dp_codec_config->getCodecConfig();
-  btav_a2dp_codec_config_t codec_config_user = a2dp_codec_config->getCodecUserConfig();
+  //btav_a2dp_codec_config_t codec_config_user = a2dp_codec_config->getCodecUserConfig();
 
   // The feeding parameters
   tA2DP_FEEDING_PARAMS* p_feeding_params = &a2dp_lhdcV1_encoder_cb.feeding_params;
@@ -412,7 +412,7 @@ static void a2dp_vendor_lhdcV1_encoder_update(uint16_t peer_mtu,
         // High1(1000K) does not supported, downgrade to High(900K)
         newValue = LHDCBT_QUALITY_HIGH; //8->7
         codec_config.codec_specific_1 = A2DP_LHDC_QUALITY_MAGIC_NUM | A2DP_LHDC_QUALITY_HIGH;
-        codec_config_user.codec_specific_1 = A2DP_LHDC_QUALITY_MAGIC_NUM | A2DP_LHDC_QUALITY_HIGH;
+        //codec_config_user.codec_specific_1 = A2DP_LHDC_QUALITY_MAGIC_NUM | A2DP_LHDC_QUALITY_HIGH;
       }
 
       if (newValue != p_encoder_params->quality_mode_index) {
@@ -425,12 +425,12 @@ static void a2dp_vendor_lhdcV1_encoder_update(uint16_t peer_mtu,
   }else {
       p_encoder_params->quality_mode_index = LHDCBT_QUALITY_LOW;
       codec_config.codec_specific_1 = A2DP_LHDC_QUALITY_MAGIC_NUM | A2DP_LHDC_QUALITY_LOW;
-      codec_config_user.codec_specific_1 = A2DP_LHDC_QUALITY_MAGIC_NUM | A2DP_LHDC_QUALITY_LOW;
+      //codec_config_user.codec_specific_1 = A2DP_LHDC_QUALITY_MAGIC_NUM | A2DP_LHDC_QUALITY_LOW;
   }
-  if (p_encoder_params->isChannelSeparation && p_encoder_params->quality_mode_index >= A2DP_LHDC_QUALITY_HIGH) {
+  if (p_encoder_params->isChannelSeparation && p_encoder_params->quality_mode_index >= LHDCBT_QUALITY_HIGH) {
       /* code */
-      LOG_DEBUG( "%s: Channel separation enabled, Max bit rate = A2DP_LHDC_QUALITY_MID", __func__);
-      p_encoder_params->quality_mode_index = A2DP_LHDC_QUALITY_MID;
+      LOG_DEBUG( "%s: Channel separation enabled, Max bit rate = LHDCBT_QUALITY_MID", __func__);
+      p_encoder_params->quality_mode_index = LHDCBT_QUALITY_MID;
   }
 
   //p_encoder_params->latency_mode_index = 1;
@@ -809,7 +809,7 @@ void a2dp_vendor_lhdcV1_set_transmit_queue_length(size_t transmit_queue_length) 
   a2dp_lhdcV1_encoder_cb.TxQueueLength = transmit_queue_length;
   tA2DP_LHDC_ENCODER_PARAMS* p_encoder_params = &a2dp_lhdcV1_encoder_cb.lhdcV1_encoder_params;
   LOG_DEBUG( "%s: transmit_queue_length %zu", __func__, transmit_queue_length);
-  if (p_encoder_params->quality_mode_index == A2DP_LHDC_QUALITY_ABR) {
+  if (p_encoder_params->quality_mode_index == LHDCBT_QUALITY_AUTO) {
       LOG_DEBUG( "%s: Auto Bitrate Enabled!", __func__);
       if (lhdcV1_auto_adjust_bitrate_func != NULL) {
           lhdcV1_auto_adjust_bitrate_func(a2dp_lhdcV1_encoder_cb.lhdcV1_handle, transmit_queue_length);

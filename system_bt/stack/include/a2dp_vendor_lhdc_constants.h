@@ -35,7 +35,7 @@
 #define A2DP_LHDC_QUALITY_ABR    9   // ABR mode
 #define A2DP_LHDC_QUALITY_HIGH1  8   // 1000kbps (supported in LHDCV5 or higher version)
 #define A2DP_LHDC_QUALITY_HIGH   7   // Equal to LHDCBT_EQMID_HQ 900kbps
-#define A2DP_LHDC_QUALITY_MID    6   // Equal to LHDCBT_EQMID_SQ 600kbps
+#define A2DP_LHDC_QUALITY_MID    6   // Equal to LHDCBT_EQMID_SQ 500kbps
 #define A2DP_LHDC_QUALITY_LOW    5   // Equal to LHDCBT_EQMID_MQ 400kbps
 #define A2DP_LHDC_QUALITY_LOW4   4   // 320
 #define A2DP_LHDC_QUALITY_LOW3   3   // 256
