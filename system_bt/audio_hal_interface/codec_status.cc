@@ -24,6 +24,7 @@
 #include "a2dp_vendor_aptx_constants.h"
 #include "a2dp_vendor_aptx_hd_constants.h"
 #include "a2dp_vendor_ldac_constants.h"
+#include "a2dp_vendor_lhdc_constants.h"
 #include "bta/av/bta_av_int.h"
 
 namespace {
@@ -39,6 +40,16 @@ using ::android::hardware::bluetooth::audio::V2_0::CodecType;
 using ::android::hardware::bluetooth::audio::V2_0::LdacChannelMode;
 using ::android::hardware::bluetooth::audio::V2_0::LdacParameters;
 using ::android::hardware::bluetooth::audio::V2_0::LdacQualityIndex;
+// Savitech Patch - START Offload
+/*
+using ::android::hardware::bluetooth::audio::V2_0::Lhdcv5Parameters;
+using ::android::hardware::bluetooth::audio::V2_0::Lhdcv5QualityIndex;
+using ::android::hardware::bluetooth::audio::V2_0::Lhdcv5FrameDuration;
+using ::android::hardware::bluetooth::audio::V2_0::Lhdcv5DataInterval;
+using ::android::hardware::bluetooth::audio::V2_0::Lhdcv5Version;
+using ::android::hardware::bluetooth::audio::V2_0::Lhdcv5Specific;
+*/
+// Savitech Patch - END
 using ::android::hardware::bluetooth::audio::V2_0::SampleRate;
 using ::android::hardware::bluetooth::audio::V2_0::SbcAllocMethod;
 using ::android::hardware::bluetooth::audio::V2_0::SbcBlockLength;
@@ -148,6 +159,30 @@ bool ldac_offloading_capability_match(const LdacParameters& ldac_capability,
           << " capability=" << toString(ldac_capability);
   return true;
 }
+
+// Savitech Patch - START  Offload
+/*
+bool lhdcv5_offloading_capability_match(const Lhdcv5Parameters& lhdcv5_capability,
+                                        const Lhdcv5Parameters& lhdcv5_config) {
+  if ((static_cast<SampleRate>(lhdcv5_capability.sampleRate &
+                               lhdcv5_config.sampleRate) ==
+       SampleRate::RATE_UNKNOWN) ||
+      (static_cast<ChannelMode>(lhdcv5_capability.channelMode &
+                                    lhdcv5_config.channelMode) ==
+       ChannelMode::UNKNOWN) ||
+      (static_cast<BitsPerSample>(lhdcv5_capability.bitsPerSample &
+                                  lhdcv5_config.bitsPerSample) ==
+       BitsPerSample::BITS_UNKNOWN)) {
+    LOG(WARNING) << __func__ << ": software codec=" << toString(lhdcv5_config)
+                 << " capability=" << toString(lhdcv5_capability);
+    return false;
+  }
+  VLOG(1) << __func__ << ": offloading codec=" << toString(lhdcv5_config)
+          << " capability=" << toString(lhdcv5_capability);
+  return true;
+}
+*/
+// Savitech Patch - END
 }  // namespace
 
 namespace bluetooth {
@@ -210,6 +245,26 @@ ChannelMode A2dpCodecToHalChannelMode(
       return ChannelMode::UNKNOWN;
   }
 }
+
+// Savitech Patch - Start
+//   LHDC_Low_Latency(non-offload)
+/*
+LhdcLowLatencyEn A2dpCodecToHalLhdcLowLatencyMode(
+    const btav_a2dp_codec_config_t& a2dp_codec_config) {
+  switch ((int)(a2dp_codec_config.codec_specific_2 & 0x1)) {
+    case 0:
+      LOG(INFO) << __func__ << ": LHDC low latency Disabled";
+      return LhdcLowLatencyEn::Disabled;
+    case 1:
+      LOG(INFO) << __func__ << ": LHDC low latency Enabled";
+      return LhdcLowLatencyEn::Enabled;
+    default:
+      LOG(INFO) << __func__ << ": LHDC low latency Disabled";
+      return LhdcLowLatencyEn::Disabled;
+  }
+}
+*/
+// Savitech Patch - End
 
 bool A2dpSbcToHalConfig(CodecConfiguration* codec_config,
                         A2dpCodecConfig* a2dp_config) {
@@ -470,6 +525,88 @@ bool A2dpLdacToHalConfig(CodecConfiguration* codec_config,
   return true;
 }
 
+// Savitech Patch - START  Offload
+#if 0
+//require definition supported in hardware/interfaces/bluetooth/audio/types.hal
+bool A2dpLhdcv5ToHalConfig(CodecConfiguration* codec_config,
+                         A2dpCodecConfig* a2dp_config) {
+  btav_a2dp_codec_config_t current_codec = a2dp_config->getCodecConfig();
+  if ((current_codec.codec_type != BTAV_A2DP_CODEC_INDEX_SOURCE_LHDCV3) &&
+      (current_codec.codec_type != BTAV_A2DP_CODEC_INDEX_SOURCE_LHDCV2) &&
+      (current_codec.codec_type != BTAV_A2DP_CODEC_INDEX_SOURCE_LHDCV5)) {
+    codec_config = {};
+    return false;
+  }
+  LOG(INFO) << __func__ << ": enter: codec_type = " << current_codec.codec_type;
+
+  tBT_A2DP_OFFLOAD a2dp_offload;
+  if (false == a2dp_config->getCodecSpecificConfig(&a2dp_offload) ) {
+    LOG(ERROR) << __func__ << ": getCodecSpecificConfig fail";
+    return false;
+  }
+
+  if (current_codec.codec_type == BTAV_A2DP_CODEC_INDEX_SOURCE_LHDCV3) {
+    codec_config->codecType = CodecType::LHDCV3;
+  } else if (current_codec.codec_type == BTAV_A2DP_CODEC_INDEX_SOURCE_LHDCV2) {
+    codec_config->codecType = CodecType::LHDCV2;
+  } else if (current_codec.codec_type == BTAV_A2DP_CODEC_INDEX_SOURCE_LHDCV5) {
+    codec_config->codecType = CodecType::LHDCV5;
+  }
+  codec_config->config.lhdcv5Config({});
+  auto lhdcv5Config = codec_config->config.lhdcv5Config();
+
+  lhdcv5Config.sampleRate = A2dpCodecToHalSampleRate(current_codec);
+  if (lhdcv5Config.sampleRate == SampleRate::RATE_UNKNOWN) {
+    LOG(ERROR) << __func__
+               << ": Unknown LHDC Vn sample_rate=" << current_codec.sample_rate;
+    return false;
+  }
+
+  lhdcv5Config.channelMode = A2dpCodecToHalChannelMode(current_codec);
+  if (lhdcv5Config.channelMode == ChannelMode::UNKNOWN) {
+    LOG(ERROR) << __func__
+               << ": Unknown LHDC Vn channel_mode=" << current_codec.channel_mode;
+    return false;
+  }
+
+  lhdcv5Config.bitsPerSample = A2dpCodecToHalBitsPerSample(current_codec);
+  if (lhdcv5Config.bitsPerSample == BitsPerSample::BITS_UNKNOWN) {
+    LOG(ERROR) << __func__ << ": Unknown LHDC Vn bits_per_sample="
+               << current_codec.bits_per_sample;
+    return false;
+  }
+
+  lhdcv5Config.codecVersion            = (::vendor::mediatek::hardware::bluetooth::audio::V2_1::Lhdcv5Version) a2dp_offload.codec_info[A2DP_OFFLOAD_LHDC_CFG_VER];
+  lhdcv5Config.qualityIndex            = (::vendor::mediatek::hardware::bluetooth::audio::V2_1::Lhdcv5QualityIndex)
+                                         ((((unsigned short) a2dp_offload.codec_info[A2DP_OFFLOAD_LHDC_CFG_BITRATE_H]) << 8) | ((unsigned short) a2dp_offload.codec_info[A2DP_OFFLOAD_LHDC_CFG_BITRATE_L]));
+  lhdcv5Config.maxQualityIndex         = (::vendor::mediatek::hardware::bluetooth::audio::V2_1::Lhdcv5QualityIndex)
+                                         ((((unsigned short) a2dp_offload.codec_info[A2DP_OFFLOAD_LHDC_CFG_MAXBITRATE_H]) << 8) | ((unsigned short) a2dp_offload.codec_info[A2DP_OFFLOAD_LHDC_CFG_MAXBITRATE_L]));
+  lhdcv5Config.minQualityIndex         = (::vendor::mediatek::hardware::bluetooth::audio::V2_1::Lhdcv5QualityIndex)
+                                         ((((unsigned short) a2dp_offload.codec_info[A2DP_OFFLOAD_LHDC_CFG_MINBITRATE_H]) << 8) | ((unsigned short) a2dp_offload.codec_info[A2DP_OFFLOAD_LHDC_CFG_MINBITRATE_L]));
+  lhdcv5Config.frameDuration           = (::vendor::mediatek::hardware::bluetooth::audio::V2_1::Lhdcv5FrameDuration) a2dp_offload.codec_info[A2DP_OFFLOAD_LHDC_CFG_FRAMEDUR];
+  lhdcv5Config.dataInterval            = (::vendor::mediatek::hardware::bluetooth::audio::V2_1::Lhdcv5DataInterval)  a2dp_offload.codec_info[A2DP_OFFLOAD_LHDC_CFG_INTERVAL];
+  lhdcv5Config.codecSpecific_1         = (::vendor::mediatek::hardware::bluetooth::audio::V2_1::Lhdcv5Specific)      a2dp_offload.codec_info[A2DP_OFFLOAD_LHDC_CFG_SPEC1];
+  lhdcv5Config.codecSpecific_2         = (::vendor::mediatek::hardware::bluetooth::audio::V2_1::Lhdcv5Specific)      a2dp_offload.codec_info[A2DP_OFFLOAD_LHDC_CFG_SPEC2];
+  lhdcv5Config.metaData[0]             = (unsigned char) a2dp_offload.codec_info[A2DP_OFFLOAD_LHDC_CFG_META];
+  lhdcv5Config.metaData[1]             = (unsigned char) a2dp_offload.codec_info[A2DP_OFFLOAD_LHDC_CFG_META + 1];
+  lhdcv5Config.metaData[2]             = (unsigned char) a2dp_offload.codec_info[A2DP_OFFLOAD_LHDC_CFG_META + 2];
+  lhdcv5Config.metaData[3]             = (unsigned char) a2dp_offload.codec_info[A2DP_OFFLOAD_LHDC_CFG_META + 3];
+  lhdcv5Config.metaData[4]             = (unsigned char) a2dp_offload.codec_info[A2DP_OFFLOAD_LHDC_CFG_META + 4];
+  lhdcv5Config.metaData[5]             = (unsigned char) a2dp_offload.codec_info[A2DP_OFFLOAD_LHDC_CFG_META + 5];
+  lhdcv5Config.metaData[6]             = (unsigned char) a2dp_offload.codec_info[A2DP_OFFLOAD_LHDC_CFG_META + 6];
+  lhdcv5Config.metaData[7]             = (unsigned char) a2dp_offload.codec_info[A2DP_OFFLOAD_LHDC_CFG_META + 7];
+
+  codec_config->config.lhdcv5Config(lhdcv5Config);
+
+  LOG(INFO) << __func__ << ": debug: sampleRate = " << current_codec.sample_rate;
+  LOG(INFO) << __func__ << ": debug: bitsPerSample = " << current_codec.bits_per_sample;
+  LOG(INFO) << __func__ << ": debug: channelMode = " << current_codec.channel_mode;
+
+  return true;
+}
+#endif
+// Savitech Patch - END
+
 bool UpdateOffloadingCapabilities(
     const std::vector<btav_a2dp_codec_config_t>& framework_preference) {
   audio_hal_capabilities = BluetoothAudioClientInterface::GetAudioCapabilities(
@@ -492,10 +629,38 @@ bool UpdateOffloadingCapabilities(
       case BTAV_A2DP_CODEC_INDEX_SOURCE_LDAC:
         codec_type_masks |= CodecType::LDAC;
         break;
+      // Savitech Patch - START  Offload
+#if 0
+      case BTAV_A2DP_CODEC_INDEX_SOURCE_LHDCV3:
+        codec_type_masks |= CodecType::LHDCV3;
+        break;
+      case BTAV_A2DP_CODEC_INDEX_SOURCE_LHDCV2:
+        codec_type_masks |= CodecType::LHDCV2;
+        break;
+      case BTAV_A2DP_CODEC_INDEX_SOURCE_LHDCV5:
+        codec_type_masks |= CodecType::LHDCV5;
+        break;
+#else
+      case BTAV_A2DP_CODEC_INDEX_SOURCE_LHDCV3:
+        [[fallthrough]];
+      case BTAV_A2DP_CODEC_INDEX_SOURCE_LHDCV2:
+        [[fallthrough]];
+      case BTAV_A2DP_CODEC_INDEX_SOURCE_LHDCV5:
+        LOG(WARNING) << __func__
+                     << ": Ignore source codec_type=" << preference.codec_type;
+        break;
+#endif
+      // Savitech Patch - END
       case BTAV_A2DP_CODEC_INDEX_SINK_SBC:
         [[fallthrough]];
       case BTAV_A2DP_CODEC_INDEX_SINK_AAC:
         [[fallthrough]];
+      // Savitech Patch - START  Offload
+      case BTAV_A2DP_CODEC_INDEX_SINK_LHDCV3:
+          [[fallthrough]];
+      case BTAV_A2DP_CODEC_INDEX_SINK_LHDCV5:
+        [[fallthrough]];
+      // Savitech Patch - END
       case BTAV_A2DP_CODEC_INDEX_SINK_LDAC:
         LOG(WARNING) << __func__
                      << ": Ignore sink codec_type=" << preference.codec_type;
@@ -554,6 +719,21 @@ bool IsCodecOffloadingEnabled(const CodecConfiguration& codec_config) {
         auto ldac_config = codec_config.config.ldacConfig();
         return ldac_offloading_capability_match(ldac_capability, ldac_config);
       }
+      // Savitech Patch - START  Offload
+      /*
+      case CodecType::LHDCV3:
+        [[fallthrough]];
+      case CodecType::LHDCV2:
+        [[fallthrough]];
+      case CodecType::LHDCV5: {
+        LOG(INFO) << __func__ << ": LHDC aDSP codecType="
+                   << toString(codec_capability.codecType);
+        auto lhdcv5_capability = codec_capability.capabilities.lhdcv5Capabilities();
+        auto lhdcv5_config = codec_config.config.lhdcv5Config();
+        return lhdcv5_offloading_capability_match(lhdcv5_capability, lhdcv5_config);
+      }
+      */
+      // Savitech Patch - END
       case CodecType::UNKNOWN:
         [[fallthrough]];
       default:

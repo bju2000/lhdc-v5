@@ -848,6 +848,14 @@ void a2dp_vendor_lhdcv5_feeding_reset(void) {
   a2dp_lhdc_encoder_cb.bytes_read = 0;
   a2dp_lhdc_encoder_cb.lhdc_feeding_state.last_frame_us = 0;
 
+  tA2DP_LHDCV5_ENCODER_PARAMS* p_encoder_params = &a2dp_lhdc_encoder_cb.lhdc_encoder_params;
+  if (p_encoder_params->quality_mode_index == LHDCV5_QUALITY_AUTO) {
+    if(lhdc_set_bitrate != NULL && a2dp_lhdc_encoder_cb.has_lhdc_handle) {
+      LOG_DEBUG("%s: reset ABR!", __func__);
+      lhdc_set_bitrate(a2dp_lhdc_encoder_cb.lhdc_handle, LHDCV5_QUALITY_RESET_AUTO);
+    }
+  }
+
   LOG_DEBUG( "%s: PCM bytes per tick %u, reset timestamp", __func__,
       a2dp_lhdc_encoder_cb.lhdc_feeding_state.bytes_per_tick);
 }

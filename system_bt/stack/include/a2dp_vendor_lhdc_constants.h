@@ -239,4 +239,55 @@ typedef enum {
   marco_ret;   \
 })
 
+//
+// Savitech - LHDC aDSP configuration
+//
+// Lhdcv5Version: 1 << (below value-1)
+#define A2DP_OFFLOAD_LHDCV2_VER_1                   0x01
+#define A2DP_OFFLOAD_LHDCV3_V3_ONLY                 0x02
+#define A2DP_OFFLOAD_LHDCV3_V4_ONLY                 0x03
+#define A2DP_OFFLOAD_LHDCV3_LLAC                    0x04
+#define A2DP_OFFLOAD_LHDCV5_VER_1                   0x01
+
+// Lhdcv5QualityIndex
+#define A2DP_OFFLOAD_LHDC_QUALITY_LOW0            0x01
+#define A2DP_OFFLOAD_LHDC_QUALITY_LOW1            0x02
+#define A2DP_OFFLOAD_LHDC_QUALITY_LOW2            0x04
+#define A2DP_OFFLOAD_LHDC_QUALITY_LOW3            0x08
+#define A2DP_OFFLOAD_LHDC_QUALITY_LOW4            0x10
+#define A2DP_OFFLOAD_LHDC_QUALITY_LOW             0x20
+#define A2DP_OFFLOAD_LHDC_QUALITY_MID             0x40
+#define A2DP_OFFLOAD_LHDC_QUALITY_HIGH            0x80
+#define A2DP_OFFLOAD_LHDC_QUALITY_HIGH1           0x100
+#define A2DP_OFFLOAD_LHDC_QUALITY_ABR             0x8000
+
+// Lhdcv5FrameDuration
+#define A2DP_OFFLOAD_LHDC_FRAME_DURATION_5000US   0x01
+
+// Lhdcv5DataInterval
+#define A2DP_OFFLOAD_LHDC_DATA_INTERVAL_20MS      0x01
+#define A2DP_OFFLOAD_LHDC_DATA_INTERVAL_10MS      0x02
+
+// Lhdcv5Specific
+#define A2DP_OFFLOAD_LHDC_SPECIFIC_FEATURE_AR     0x01
+#define A2DP_OFFLOAD_LHDC_SPECIFIC_FEATURE_JAS    0x02
+#define A2DP_OFFLOAD_LHDC_SPECIFIC_FEATURE_META   0x04
+
+#define A2DP_OFFLOAD_LHDC_SPECIFIC_ACTION_AR_ON   0x01
+#define A2DP_OFFLOAD_LHDC_SPECIFIC_FEATURE_SPLIT  0x80
+
+// Lhdcv5Parameters
+#define A2DP_OFFLOAD_LHDC_CFG_VER                   6
+#define A2DP_OFFLOAD_LHDC_CFG_BITRATE_L             7
+#define A2DP_OFFLOAD_LHDC_CFG_BITRATE_H             8
+#define A2DP_OFFLOAD_LHDC_CFG_MAXBITRATE_L          9
+#define A2DP_OFFLOAD_LHDC_CFG_MAXBITRATE_H          10
+#define A2DP_OFFLOAD_LHDC_CFG_MINBITRATE_L          11
+#define A2DP_OFFLOAD_LHDC_CFG_MINBITRATE_H          12
+#define A2DP_OFFLOAD_LHDC_CFG_FRAMEDUR              13
+#define A2DP_OFFLOAD_LHDC_CFG_INTERVAL              14
+#define A2DP_OFFLOAD_LHDC_CFG_SPEC1                 15
+#define A2DP_OFFLOAD_LHDC_CFG_SPEC2                 16
+#define A2DP_OFFLOAD_LHDC_CFG_META                  17
+
 #endif  // A2DP_VENDOR_LHDC_CONSTANTS_H

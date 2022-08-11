@@ -508,8 +508,6 @@ int A2DP_VendorGetTrackSampleRateLhdcV3Sink(const uint8_t* p_codec_info) {
   return -1;
 }
 
-uint32_t A2DP_VendorGetBitRateLhdcV3Sink(const uint8_t* p_codec_info) { return 400; /*a2dp_sbc_get_bitrate();*/ }
-
 int A2DP_VendorGetSinkTrackChannelTypeLhdcV3(const uint8_t* p_codec_info) {
   tA2DP_LHDCV3_SINK_CIE lhdc_cie;
 
@@ -661,7 +659,7 @@ btav_a2dp_codec_index_t A2DP_VendorSinkCodecIndexLhdcV3(
 const char* A2DP_VendorCodecIndexStrLhdcV3Sink(void) { return "LHDC V3 SINK"; }
 
 bool A2DP_VendorInitCodecConfigLhdcV3Sink(AvdtpSepConfig* p_cfg) {
-  LOG_DEBUG("[WL50] %s: enter", __func__);
+  LOG_DEBUG("%s: enter", __func__);
   if (A2DP_BuildInfoLhdcV3Sink(AVDT_MEDIA_TYPE_AUDIO, &a2dp_lhdcv3_sink_caps,
                         p_cfg->codec_info) != A2DP_SUCCESS) {
     return false;

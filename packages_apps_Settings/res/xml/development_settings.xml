@@ -396,6 +396,13 @@
             android:dialogTitle="@string/bluetooth_enable_a2dp_codec_lhdc_ar_effect_dialog_title"
             android:entries="@array/bluetooth_enable_a2dp_codec_lhdc_ar_effect_titles"
             android:entryValues="@array/bluetooth_enable_a2dp_codec_lhdc_ar_effect_values" />
+            
+        <ListPreference
+            android:key="bluetooth_enable_a2dp_codec_lhdc_lossless"
+            android:title="@string/bluetooth_enable_a2dp_codec_lhdc_lossless"
+            android:dialogTitle="@string/bluetooth_enable_a2dp_codec_lhdc_lossless_dialog_title"
+            android:entries="@array/bluetooth_enable_a2dp_codec_lhdc_lossless_titles"
+            android:entryValues="@array/bluetooth_enable_a2dp_codec_lhdc_lossless_values" />
 
         <ListPreference
             android:key="bluetooth_max_connected_audio_devices"

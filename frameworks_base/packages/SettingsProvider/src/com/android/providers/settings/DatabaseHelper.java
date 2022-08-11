@@ -2466,7 +2466,7 @@ class DatabaseHelper extends SQLiteOpenHelper {
 
             loadBooleanSetting(stmt, Settings.Global.BLUETOOTH_ON,
                     R.bool.def_bluetooth_on);
-            
+
             // Savitech Add -- A2DP_Source_Sink_Switch
             loadBooleanSetting(stmt, Settings.Global.BLUETOOTH_A2DP_SINK,
                     R.bool.def_bluetooth_a2dp_sink);

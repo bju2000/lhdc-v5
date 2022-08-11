@@ -48,7 +48,6 @@ public final class BluetoothCodecConfig implements Parcelable {
             SOURCE_CODEC_TYPE_LDAC,
             SOURCE_CODEC_TYPE_LHDCV3,
             SOURCE_CODEC_TYPE_LHDCV2,
-            SOURCE_CODEC_TYPE_LHDCV1,
             SOURCE_CODEC_TYPE_LHDCV5,
             SOURCE_CODEC_TYPE_MAX,
             SOURCE_CODEC_TYPE_INVALID
@@ -79,14 +78,11 @@ public final class BluetoothCodecConfig implements Parcelable {
     public static final int SOURCE_CODEC_TYPE_LHDCV2 = 6;
 
     @UnsupportedAppUsage
-    public static final int SOURCE_CODEC_TYPE_LHDCV1 = 7;
-
-    @UnsupportedAppUsage
-    public static final int SOURCE_CODEC_TYPE_LHDCV5 = 8;
+    public static final int SOURCE_CODEC_TYPE_LHDCV5 = 7;
     // Savitech LHDC -- END
 
     @UnsupportedAppUsage
-    public static final int SOURCE_CODEC_TYPE_MAX = 9;
+    public static final int SOURCE_CODEC_TYPE_MAX = 8;
 
     @UnsupportedAppUsage
     public static final int SOURCE_CODEC_TYPE_INVALID = 1000 * 1000;
@@ -422,8 +418,6 @@ public final class BluetoothCodecConfig implements Parcelable {
             case SOURCE_CODEC_TYPE_LDAC:
                 return "LDAC";
             // Savitech LHDC -- START
-            case SOURCE_CODEC_TYPE_LHDCV1:
-                return "LHDC V1";
             case SOURCE_CODEC_TYPE_LHDCV2:
                 return "LHDC V2";
             case SOURCE_CODEC_TYPE_LHDCV3:
@@ -684,12 +678,11 @@ public final class BluetoothCodecConfig implements Parcelable {
                 }
                 return true;
             // LHDC: Playback Quality at CodecSpecific1, Low Latency at CodecSpecific2; other feature flags at CodecSpecific3.
-            case SOURCE_CODEC_TYPE_LHDCV1:
             case SOURCE_CODEC_TYPE_LHDCV2:
             case SOURCE_CODEC_TYPE_LHDCV3:
             case SOURCE_CODEC_TYPE_LHDCV5:
                 if (mCodecSpecific1 != other.mCodecSpecific1 ||
-                    mCodecSpecific2 != other.mCodecSpecific2 || 
+                    mCodecSpecific2 != other.mCodecSpecific2 ||
                     mCodecSpecific3 != other.mCodecSpecific3) {
                     return false;
                 }

@@ -61,8 +61,13 @@ public class BluetoothSampleRateDialogPreferenceController extends
             case 0:
                 final BluetoothCodecConfig currentConfig = getCurrentCodecConfig();
                 if (currentConfig != null) {
-                    sampleRateValue = getHighestSampleRate(getSelectableByCodecType(
-                            currentConfig.getCodecType()));
+                    /* Savitech LHDC patch: use default by LHDC native when selecting system default */
+                    if (currentConfig.getCodecType() != BluetoothCodecConfig.SOURCE_CODEC_TYPE_LHDCV2 &&
+                        currentConfig.getCodecType() != BluetoothCodecConfig.SOURCE_CODEC_TYPE_LHDCV3 &&
+                        currentConfig.getCodecType() != BluetoothCodecConfig.SOURCE_CODEC_TYPE_LHDCV5) {
+                            sampleRateValue = getHighestSampleRate(getSelectableByCodecType(
+                                currentConfig.getCodecType()));
+                    }
                 }
                 break;
             case 1:

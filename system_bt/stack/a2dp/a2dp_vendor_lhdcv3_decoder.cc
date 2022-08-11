@@ -20,7 +20,6 @@
 
 #include <dlfcn.h>
 #include <inttypes.h>
-#include <pthread.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -547,5 +546,5 @@ void a2dp_vendor_lhdcv3_decoder_configure(const uint8_t* p_codec_info) {
     return;
   }
 
-  LOG_ERROR("JIMM %s: enter", __func__);
+  LOG_ERROR("%s", __func__);
 }

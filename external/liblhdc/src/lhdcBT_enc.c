@@ -23,6 +23,8 @@
 
 #define LHDC_BITRATE_ELEMENTS_SIZE   (sizeof(auto_bitrate_adjust_table_lhdc)/sizeof(int))
 #define LLAC_BITRATE_ELEMENTS_SIZE   (sizeof(auto_bitrate_adjust_table_llac)/sizeof(int))
+#define LHDC_ABR_DEFAULT_BITRATE     (400)
+#define LLAC_ABR_DEFAULT_BITRATE     (400)
 
 #define AR_ALWAYS_ONx  1
 
@@ -162,7 +164,7 @@ static int lhdc_encoder_set_bitrate(lhdc_para_t * handle, int bitrate_inx){
             if (bitrate_inx != LHDCBT_QUALITY_AUTO) {
                 handle->lastBitrate = TARGET_BITRATE_LIMIT(lhdc_util_get_bitrate(bitrate_inx), handle->hasMinBitrateLimit ? 320 : 128);
             }else{
-                handle->lastBitrate = 400;
+                handle->lastBitrate = LHDC_ABR_DEFAULT_BITRATE;
                 lhdc_util_reset_down_bitrate(ENC_TYPE_LHDC, handle);
                 lhdc_util_reset_up_bitrate(ENC_TYPE_LHDC, handle);
             }
@@ -649,14 +651,60 @@ int lhdcBT_set_bitrate(HANDLE_LHDC_BT handle, int bitrate_inx){
     enc_t * enc = &lhdcBT->enc;
 
     switch(lhdcBT->enc_type){
-        case ENC_TYPE_LHDC:
-            return lhdc_encoder_set_bitrate(enc->lhdc, bitrate_inx);
+        case ENC_TYPE_LHDC: {
+          lhdc_para_t *lhdc = enc->lhdc;
+          if(lhdc == NULL) {
+            ALOGD("%s: LHDC [Reset BiTrAtE] null ptr!",  __func__);
+            return -1;
+          }
+
+          if(bitrate_inx == LHDCBT_QUALITY_RESET_AUTO) {
+            if(lhdc->qualityStatus != LHDCBT_QUALITY_AUTO) {
+              ALOGD("%s: LHDC [Reset BiTrAtE] only work in ABR! (%d)",  __func__, lhdc->qualityStatus);
+              return -1;
+            }
+            // change bitrate only, do not update qualityStatus
+            lhdc->lastBitrate = LHDC_ABR_DEFAULT_BITRATE;
+            lhdc_util_reset_up_bitrate(ENC_TYPE_LHDC, lhdc);
+            lhdc_util_reset_down_bitrate(ENC_TYPE_LHDC, lhdc);
+            if (lhdc->version >= 2) {
+              lhdc->updateFramneInfo = true;
+            }
+            LossyEncoderSetTargetByteRate(lhdc->fft_blk, (lhdc->lastBitrate * 1000) / 8);
+            ALOGD("%s: LHDC [Reset BiTrAtE] Reset bitrate to (%d)",  __func__, lhdc->lastBitrate);
+            return 0;
+          } else {
+            // normal case, will update qualityStatus
+            ALOGD("%s: LHDC set bitrate_inx %d", __func__, bitrate_inx);
+            return lhdc_encoder_set_bitrate(lhdc, bitrate_inx);
+          }
+        }
 
         case ENC_TYPE_LLAC: {
+          llac_para_t * llac = enc->llac;
+          if(llac == NULL) {
+            ALOGD("%s: LLAC [Reset BiTrAtE] null ptr!",  __func__);
+            return -1;
+          }
 
+          if(bitrate_inx == LHDCBT_QUALITY_RESET_AUTO) {
+            if(llac->qualityStatus != LHDCBT_QUALITY_AUTO) {
+              ALOGD("%s: LLAC [Reset BiTrAtE] only work in ABR! (%d)",  __func__, llac->qualityStatus);
+              return -1;
+            }
+            // change bitrate only, do not update qualityStatus
+            llac->lastBitrate = LLAC_ABR_DEFAULT_BITRATE;
+            ALOGD("%s: LLAC [Reset BiTrAtE] Reset bitrate to (%d)", __func__, llac->lastBitrate);
+            llac_enc_set_bitrate(llac->lastBitrate * 1000, &llac->out_nbytes, &llac->real_bitrate, llac->lh4_enc);
+            llac->updateFramneInfo = true;
+            lhdc_util_reset_up_bitrate(ENC_TYPE_LLAC, llac);
+            lhdc_util_reset_down_bitrate(ENC_TYPE_LLAC, llac);
+            return 0;
+          } else {
             //return llac_encoder_init(enc->llac, sampling_freq, bitPerSample, bitrate_inx, mtu, interval);
             ALOGD("%s: LLAC not supported", __func__);
             return -1;
+          }
         }
         default:
         break;

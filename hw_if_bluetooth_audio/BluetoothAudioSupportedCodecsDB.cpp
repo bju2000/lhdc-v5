@@ -30,6 +30,10 @@ using ::android::hardware::bluetooth::audio::V2_0::AacVariableBitRate;
 using ::android::hardware::bluetooth::audio::V2_0::AptxParameters;
 using ::android::hardware::bluetooth::audio::V2_0::BitsPerSample;
 using ::android::hardware::bluetooth::audio::V2_0::ChannelMode;
+// Savitech Patch - Start
+//   LHDC_Low_Latency(non-offload)
+//using ::android::hardware::bluetooth::audio::V2_0::LhdcLowLatencyEn;
+// Savitech Patch - End
 using ::android::hardware::bluetooth::audio::V2_0::CodecType;
 using ::android::hardware::bluetooth::audio::V2_0::LdacChannelMode;
 using ::android::hardware::bluetooth::audio::V2_0::LdacParameters;
@@ -52,7 +56,12 @@ static const PcmParameters kDefaultSoftwarePcmCapabilities = {
         static_cast<ChannelMode>(ChannelMode::MONO | ChannelMode::STEREO),
     .bitsPerSample = static_cast<BitsPerSample>(BitsPerSample::BITS_16 |
                                                 BitsPerSample::BITS_24 |
-                                                BitsPerSample::BITS_32)};
+                                                BitsPerSample::BITS_32),
+    // Savitech Patch - Start
+    //   LHDC_Low_Latency(non-offload)
+    //.isLowLatencyEnabled = static_cast<LhdcLowLatencyEn>(LhdcLowLatencyEn::Disabled | LhdcLowLatencyEn::Disabled),
+    // Savitech Patch - End
+};
 
 // Default Supported Codecs
 // SBC: mSampleRate:(44100), mBitsPerSample:(16), mChannelMode:(MONO|STEREO)

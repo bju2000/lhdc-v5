@@ -172,6 +172,12 @@ const char* A2DP_VendorCodecIndexStrLhdcV2(void);
 
 // Initializes A2DP LHDC Source codec information into |tAVDT_CFG|
 // configuration entry pointed by |p_cfg|.
+
 bool A2DP_VendorInitCodecConfigLhdcV2(AvdtpSepConfig* p_cfg);
+// Gets the track bitrate value for the A2DP LHDCV2 codec.
+// |p_codec_info| is a pointer to the LHDC codec_info to decode.
+// Returns the track bit rate on success, or -1 if |p_codec_info|
+// contains invalid codec information.
+int A2DP_VendorGetBitRateLhdcV2(const uint8_t* p_codec_info);
 
 #endif  // A2DP_VENDOR_LHDCV2_H

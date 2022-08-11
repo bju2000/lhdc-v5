@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016 The Android Open Source Project
+ * Copyright (C) 2022 The Android Open Source Project
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,7 @@
  */
 
 //
-// Interface to the A2DP LHDC V3 Decoder
+// Interface to the A2DP LHDC V5 Decoder
 //
 
 #ifndef A2DP_VENDOR_LHDCV5_DECODER_H
@@ -30,30 +30,29 @@
 // Return true on success, otherwise false.
 bool a2dp_lhdcv5_decoder_save_codec_info (const uint8_t* p_codec_info);
 
-// Loads the A2DP LHDC V3 decoder.
+// Loads the A2DP LHDC V5 decoder.
 // Return true on success, otherwise false.
 bool A2DP_VendorLoadDecoderLhdcV5(void);
 
-// Unloads the A2DP LHDC V3 decoder.
+// Unloads the A2DP LHDC V5 decoder.
 void A2DP_VendorUnloadDecoderLhdcV5(void);
 
-// Initialize the A2DP LHDC V3 decoder.
+// Initialize the A2DP LHDC V5 decoder.
 bool a2dp_vendor_lhdcv5_decoder_init(decoded_data_callback_t decode_callback);
 
-// Cleanup the A2DP LHDC V3 decoder.
+// Cleanup the A2DP LHDC V5 decoder.
 void a2dp_vendor_lhdcv5_decoder_cleanup(void);
 
-// Decodes |p_buf|. Calls |decode_callback| passed into |a2dp_lhdcv3_decoder_init|
-// if decoded frames are available.
+// Decode LHDC V5 packet to PCM
 bool a2dp_vendor_lhdcv5_decoder_decode_packet(BT_HDR* p_buf);
 
-// Start the A2DP LHDCV3 decoder.
+// Start the A2DP LHDC V5 decoder.
 void a2dp_vendor_lhdcv5_decoder_start(void);
 
-// Suspend the A2DP LHDCV3 decoder.
+// Suspend the A2DP LHDC V5 decoder.
 void a2dp_vendor_lhdcv5_decoder_suspend(void);
 
-// A2DP LHDCV3 decoder configuration.
+// A2DP LHDC V5 decoder configuration.
 void a2dp_vendor_lhdcv5_decoder_configure(const uint8_t* p_codec_info);
 
 #endif  // A2DP_VENDOR_LHDCV5_DECODER_H

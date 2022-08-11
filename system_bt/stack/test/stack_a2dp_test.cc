@@ -209,6 +209,14 @@ static const char* APTX_ENCODER_LIB_NAME = "libaptX_encoder.so";
 static const char* APTX_HD_ENCODER_LIB_NAME = "libaptXHD_encoder.so";
 static const char* LDAC_ENCODER_LIB_NAME = "libldacBT_enc.so";
 static const char* LDAC_DECODER_LIB_NAME = "libldacBT_dec.so";
+// Savitech Patch - START
+static const char* LHDCV2_ENCODER_LIB_NAME = "liblhdcBT_enc.so";
+static const char* LHDCV3_ENCODER_LIB_NAME = "liblhdcBT_enc.so";
+static const char* LHDCV5_ENCODER_LIB_NAME = "liblhdcv5BT_enc.so";
+static const char* LHDCV3_DECODER_LIB_NAME = "liblhdcBT_dec.so";
+static const char* LHDCV5_DECODER_LIB_NAME = "liblhdcv5BT_dec.so";
+// Savitech Patch - END
+
 
 static bool has_shared_library(const char* name) {
   void* lib_handle = dlopen(name, RTLD_NOW);
@@ -253,6 +261,23 @@ class StackA2dpTest : public ::testing::Test {
           // shared library installed.
           supported = has_shared_library(LDAC_ENCODER_LIB_NAME);
           break;
+          // Savitech Patch - START  Offload
+        case BTAV_A2DP_CODEC_INDEX_SOURCE_LHDCV3:
+          // Codec LDAC is supported only if the device has the corresponding
+          // shared library installed.
+          supported = has_shared_library(LHDCV3_ENCODER_LIB_NAME);
+          break;
+        case BTAV_A2DP_CODEC_INDEX_SOURCE_LHDCV2:
+          // Codec LDAC is supported only if the device has the corresponding
+          // shared library installed.
+          supported = has_shared_library(LHDCV2_ENCODER_LIB_NAME);
+          break;
+        case BTAV_A2DP_CODEC_INDEX_SOURCE_LHDCV5:
+          // Codec LDAC is supported only if the device has the corresponding
+          // shared library installed.
+          supported = has_shared_library(LHDCV5_ENCODER_LIB_NAME);
+          break;
+          // Savitech Patch - END
         case BTAV_A2DP_CODEC_INDEX_SINK_SBC:
           supported = true;
           break;
@@ -264,6 +289,18 @@ class StackA2dpTest : public ::testing::Test {
           // shared library installed.
           supported = has_shared_library(LDAC_DECODER_LIB_NAME);
           break;
+        // Savitech Patch - START  Offload
+        case BTAV_A2DP_CODEC_INDEX_SINK_LHDCV3:
+          // Codec LDAC is supported only if the device has the corresponding
+          // shared library installed.
+          supported = has_shared_library(LHDCV3_DECODER_LIB_NAME);
+          break;
+        case BTAV_A2DP_CODEC_INDEX_SINK_LHDCV5:
+          // Codec LDAC is supported only if the device has the corresponding
+          // shared library installed.
+          supported = has_shared_library(LHDCV5_DECODER_LIB_NAME);
+          break;
+        // Savitech Patch - END
         case BTAV_A2DP_CODEC_INDEX_MAX:
           // Needed to avoid using "default:" case so we can capture when
           // a new codec is added, and it can be included here.

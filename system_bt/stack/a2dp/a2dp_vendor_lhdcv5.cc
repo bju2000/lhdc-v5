@@ -65,7 +65,7 @@ static const tA2DP_LHDCV5_CIE a2dp_lhdcv5_source_caps = {
     // Sampling Frequency
     (A2DP_LHDCV5_SAMPLING_FREQ_44100 | A2DP_LHDCV5_SAMPLING_FREQ_48000 | A2DP_LHDCV5_SAMPLING_FREQ_96000 | A2DP_LHDCV5_SAMPLING_FREQ_192000),
     // Bits Per Sample
-    (A2DP_LHDCV5_BIT_FMT_16 | A2DP_LHDCV5_BIT_FMT_24 | A2DP_LHDCV5_BIT_FMT_32),
+    (A2DP_LHDCV5_BIT_FMT_16 | A2DP_LHDCV5_BIT_FMT_24),
     // Channel Mode
     A2DP_LHDCV5_CHANNEL_MODE_STEREO,
     // Codec SubVersion Number
@@ -869,14 +869,15 @@ int A2DP_VendorGetBitRateLhdcV5(const uint8_t* p_codec_info) {
         return 500000;
       case A2DP_LHDCV5_QUALITY_HIGH:
         return 900000;
-      case A2DP_LHDCV5_QUALITY_ABR:
-        return 1000000;
       case A2DP_LHDCV5_QUALITY_HIGH1:
+        return 1000000;
+      case A2DP_LHDCV5_QUALITY_ABR:
+        return 9999999;
       default:
-        return 0;
+        return -1;
     }
   }
-  return 0;
+  return 400000;
 }
 
 int A2DP_VendorGetTrackSampleRateLhdcV5(const uint8_t* p_codec_info) {
@@ -1058,6 +1059,53 @@ bool A2DP_VendorBuildCodecHeaderLhdcV5(UNUSED_ATTR const uint8_t* p_codec_info,
   p[1] = ( uint8_t)( ( frames_per_packet >> 8) & 0xff);
 
   return true;
+}
+
+void A2DP_VendorDumpCodecInfoLhdcV5(const uint8_t* p_codec_info) {
+  tA2DP_STATUS a2dp_status;
+  tA2DP_LHDCV5_CIE lhdc_cie;
+
+  a2dp_status = A2DP_ParseInfoLhdcV5(&lhdc_cie, p_codec_info, true, IS_SRC);
+  if (a2dp_status != A2DP_SUCCESS) {
+    LOG_ERROR( "%s: A2DP_ParseInfoLhdcV5 fail:%d", __func__, a2dp_status);
+    return;
+  }
+
+  LOG_DEBUG( "\tsamp_freq: 0x%02X ", lhdc_cie.sampleRate);
+  if (lhdc_cie.sampleRate & A2DP_LHDCV5_SAMPLING_FREQ_44100) {
+    LOG_DEBUG( "\tsamp_freq: (44100)");
+  }
+  if (lhdc_cie.sampleRate & A2DP_LHDCV5_SAMPLING_FREQ_48000) {
+    LOG_DEBUG( "\tsamp_freq: (48000)");
+  }
+  if (lhdc_cie.sampleRate & A2DP_LHDCV5_SAMPLING_FREQ_96000) {
+    LOG_DEBUG( "\tsamp_freq: (96000)");
+  }
+  if (lhdc_cie.sampleRate & A2DP_LHDCV5_SAMPLING_FREQ_192000) {
+    LOG_DEBUG( "\tsamp_freq: (19200)");
+  }
+
+  LOG_DEBUG( "\tbitsPerSample: 0x%02X ", lhdc_cie.bitsPerSample);
+  if (lhdc_cie.bitsPerSample & A2DP_LHDCV5_BIT_FMT_16) {
+    LOG_DEBUG( "\tbit_depth: (16)");
+  }
+  if (lhdc_cie.bitsPerSample & A2DP_LHDCV5_BIT_FMT_24) {
+    LOG_DEBUG( "\tbit_depth: (24)");
+  }
+  if (lhdc_cie.bitsPerSample & A2DP_LHDCV5_BIT_FMT_32) {
+    LOG_DEBUG( "\tbit_depth: (32)");
+  }
+
+  LOG_DEBUG( "\tchannelMode: 0x%02X ", lhdc_cie.channelMode);
+  if (lhdc_cie.channelMode & A2DP_LHDCV5_CHANNEL_MODE_MONO) {
+    LOG_DEBUG( "\tchannle_mode: (mono)");
+  }
+  if (lhdc_cie.channelMode & A2DP_LHDCV5_CHANNEL_MODE_DUAL) {
+    LOG_DEBUG( "\tchannle_mode: (dual)");
+  }
+  if (lhdc_cie.channelMode & A2DP_LHDCV5_CHANNEL_MODE_STEREO) {
+    LOG_DEBUG( "\tchannle_mode: (stereo)");
+  }
 }
 
 std::string A2DP_VendorCodecInfoStringLhdcV5(const uint8_t* p_codec_info) {
@@ -2147,7 +2195,8 @@ bool A2dpCodecConfigLhdcV5Base::setCodecConfig(const uint8_t* p_peer_codec_info,
         (A2DP_LHDC_TO_A2DP_CODEC_CONFIG_ | A2DP_LHDC_TO_A2DP_CODEC_CAP_ | A2DP_LHDC_TO_A2DP_CODEC_SELECT_CAP_),
         false);
     // update
-    hasUserSet = true;  //caps-control enabling, always true
+    //hasUserSet = true;  //caps-control enabling, always true
+    hasUserSet = A2DP_IsFeatureInUserConfigLhdcV5(&allCfgPack, LHDCV5_FEATURE_CODE_LLESS);  //UI-control
     if (hasFeature && hasUserSet) {
       result_config_cie.hasFeatureLLESS = true;
       A2DP_UpdateFeatureToA2dpConfigLhdcV5(

@@ -110,7 +110,7 @@
 #define A2DP_LHDCV5_QUALITY_ABR    (0x09)  // Adaptive Bit Rate
 #define A2DP_LHDCV5_QUALITY_HIGH1  (0x08)  // 1000kbps
 #define A2DP_LHDCV5_QUALITY_HIGH   (0x07)  // 900kbps
-#define A2DP_LHDCV5_QUALITY_MID    (0x06)  // 600kbps
+#define A2DP_LHDCV5_QUALITY_MID    (0x06)  // 500kbps
 #define A2DP_LHDCV5_QUALITY_LOW    (0x05)  // 400kbps
 #define A2DP_LHDCV5_QUALITY_LOW4   (0x04)  // 320kbps
 #define A2DP_LHDCV5_QUALITY_LOW3   (0x03)  // 256kbps

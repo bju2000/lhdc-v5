@@ -319,4 +319,10 @@ bool A2DP_VendorInitCodecConfigLhdcV3(AvdtpSepConfig* p_cfg);
 
 bool A2DP_VendorGetSrcCapVectorLhdcv3(uint8_t* capVector);
 
+// Gets the track bitrate value for the A2DP LHDCV3 codec.
+// |p_codec_info| is a pointer to the LHDC codec_info to decode.
+// Returns the track bit rate on success, or -1 if |p_codec_info|
+// contains invalid codec information.
+int A2DP_VendorGetBitRateLhdcV3(const uint8_t* p_codec_info);
+
 #endif  // A2DP_VENDOR_LHDCV3_H

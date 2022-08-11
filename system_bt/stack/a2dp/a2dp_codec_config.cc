@@ -33,7 +33,6 @@
 #include "a2dp_vendor_aptx.h"
 #include "a2dp_vendor_aptx_hd.h"
 #include "a2dp_vendor_ldac.h"
-#include "a2dp_vendor_lhdcv1.h"
 #include "a2dp_vendor_lhdcv2.h"
 #include "a2dp_vendor_lhdcv3.h"
 #include "a2dp_vendor_lhdcv3_dec.h"
@@ -143,9 +142,6 @@ A2dpCodecConfig* A2dpCodecConfig::createCodec(
       break;
     case BTAV_A2DP_CODEC_INDEX_SINK_LDAC:
       codec_config = new A2dpCodecConfigLdacSink(codec_priority);
-      break;
-    case BTAV_A2DP_CODEC_INDEX_SOURCE_LHDCV1:
-      codec_config = new A2dpCodecConfigLhdcV1(codec_priority);
       break;
     case BTAV_A2DP_CODEC_INDEX_SOURCE_LHDCV2:
       codec_config = new A2dpCodecConfigLhdcV2(codec_priority);
@@ -271,12 +267,430 @@ bool A2dpCodecConfig::getCodecSpecificConfig(tBT_A2DP_OFFLOAD* p_a2dp_offload) {
         LOG_VERBOSE("%s: Ldac specific channelmode =%d", __func__,
                     p_a2dp_offload->codec_info[7]);
       }
+      // Savitech Patch - START  Offload
+      else if (vendor_id == A2DP_LHDC_VENDOR_ID && codec_id == A2DP_LHDCV3_CODEC_ID) {
+        //
+        // LHDC V3
+        //
+        // Main Version
+        if ((codec_config[10] & A2DP_LHDC_VERSION_MASK) != A2DP_LHDC_VER3 &&
+            (codec_config[10] & A2DP_LHDC_VERSION_MASK) != A2DP_LHDC_VER6) {
+          LOG_ERROR("%s: [LHDC V3] Unsupported version 0x%x", __func__,
+              (codec_config[10] & A2DP_LHDC_VERSION_MASK));
+          goto fail;
+        }
+
+        LOG_DEBUG("%s: [LHDC V3] isLLAC=%d isLHDCV4=%d", __func__,
+            (codec_config[10] & A2DP_LHDC_FEATURE_LLAC),
+            (codec_config[11] & A2DP_LHDC_FEATURE_LHDCV4));
+        // LHDC/LLAC handle Version
+        if ((codec_config[10] & A2DP_LHDC_FEATURE_LLAC) != 0 &&
+            (codec_config[11] & A2DP_LHDC_FEATURE_LHDCV4) == 0) {
+          // LLAC (isLLAC && !isLHDCV4)
+          p_a2dp_offload->codec_info[A2DP_OFFLOAD_LHDC_CFG_VER] = 1 << (A2DP_OFFLOAD_LHDCV3_LLAC-1);
+          LOG_DEBUG("%s: [LHDC V3] init to LLAC (0x%02X)", __func__,
+              p_a2dp_offload->codec_info[A2DP_OFFLOAD_LHDC_CFG_VER]);
+        } else if ((codec_config[10] & A2DP_LHDC_FEATURE_LLAC) == 0 &&
+            (codec_config[11] & A2DP_LHDC_FEATURE_LHDCV4) != 0) {
+          // LHDC V4 Only (!isLLAC && isLHDCV4)
+          p_a2dp_offload->codec_info[A2DP_OFFLOAD_LHDC_CFG_VER] = 1 << (A2DP_OFFLOAD_LHDCV3_V4_ONLY-1);
+          LOG_DEBUG("%s: [LHDC V3] init to LHDCV4 only (0x%02X)", __func__,
+              p_a2dp_offload->codec_info[A2DP_OFFLOAD_LHDC_CFG_VER]);
+        } else if ((codec_config[10] & A2DP_LHDC_FEATURE_LLAC) == 0 &&
+            (codec_config[11] & A2DP_LHDC_FEATURE_LHDCV4) == 0) {
+          // LHDC V3 Only (!isLLAC && !isLHDCV4)
+          p_a2dp_offload->codec_info[A2DP_OFFLOAD_LHDC_CFG_VER] = 1 << (A2DP_OFFLOAD_LHDCV3_V3_ONLY-1);
+          LOG_DEBUG("%s: [LHDC V3] init to LHDCV3 only (0x%02X)", __func__,
+              p_a2dp_offload->codec_info[A2DP_OFFLOAD_LHDC_CFG_VER]);
+        }else {
+          // LHDC V3 Only - default
+          p_a2dp_offload->codec_info[A2DP_OFFLOAD_LHDC_CFG_VER] = 1 << (A2DP_OFFLOAD_LHDCV3_V3_ONLY-1);
+          LOG_DEBUG("%s: [LHDC V3] flags check incorrect. So init to LHDCV3 only (0x%02X)", __func__,
+              p_a2dp_offload->codec_info[A2DP_OFFLOAD_LHDC_CFG_VER]);
+        }
+
+        // bit rate index
+        switch (codec_config_.codec_specific_1 & 0x0F) {
+        case A2DP_LHDC_QUALITY_LOW0:
+          p_a2dp_offload->codec_info[A2DP_OFFLOAD_LHDC_CFG_BITRATE_L] = (uint8_t) (((uint16_t) A2DP_OFFLOAD_LHDC_QUALITY_LOW0) & ((uint16_t) 0xFF));
+          p_a2dp_offload->codec_info[A2DP_OFFLOAD_LHDC_CFG_BITRATE_H] = (uint8_t) ((((uint16_t) A2DP_OFFLOAD_LHDC_QUALITY_LOW0) >> 8) & ((uint16_t) 0xFF));
+          break;
+        case A2DP_LHDC_QUALITY_LOW1:
+          p_a2dp_offload->codec_info[A2DP_OFFLOAD_LHDC_CFG_BITRATE_L] = (uint8_t) (((uint16_t) A2DP_OFFLOAD_LHDC_QUALITY_LOW1) & ((uint16_t) 0xFF));
+          p_a2dp_offload->codec_info[A2DP_OFFLOAD_LHDC_CFG_BITRATE_H] = (uint8_t) ((((uint16_t) A2DP_OFFLOAD_LHDC_QUALITY_LOW1) >> 8) & ((uint16_t) 0xFF));
+          break;
+        case A2DP_LHDC_QUALITY_LOW2:
+          p_a2dp_offload->codec_info[A2DP_OFFLOAD_LHDC_CFG_BITRATE_L] = (uint8_t) (((uint16_t) A2DP_OFFLOAD_LHDC_QUALITY_LOW2) & ((uint16_t) 0xFF));
+          p_a2dp_offload->codec_info[A2DP_OFFLOAD_LHDC_CFG_BITRATE_H] = (uint8_t) ((((uint16_t) A2DP_OFFLOAD_LHDC_QUALITY_LOW2) >> 8) & ((uint16_t) 0xFF));
+          break;
+        case A2DP_LHDC_QUALITY_LOW3:
+          p_a2dp_offload->codec_info[A2DP_OFFLOAD_LHDC_CFG_BITRATE_L] = (uint8_t) (((uint16_t) A2DP_OFFLOAD_LHDC_QUALITY_LOW3) & ((uint16_t) 0xFF));
+          p_a2dp_offload->codec_info[A2DP_OFFLOAD_LHDC_CFG_BITRATE_H] = (uint8_t) ((((uint16_t) A2DP_OFFLOAD_LHDC_QUALITY_LOW3) >> 8) & ((uint16_t) 0xFF));
+          break;
+        case A2DP_LHDC_QUALITY_LOW4:
+          p_a2dp_offload->codec_info[A2DP_OFFLOAD_LHDC_CFG_BITRATE_L] = (uint8_t) (((uint16_t) A2DP_OFFLOAD_LHDC_QUALITY_LOW4) & ((uint16_t) 0xFF));
+          p_a2dp_offload->codec_info[A2DP_OFFLOAD_LHDC_CFG_BITRATE_H] = (uint8_t) ((((uint16_t) A2DP_OFFLOAD_LHDC_QUALITY_LOW4) >> 8) & ((uint16_t) 0xFF));
+          break;
+        case A2DP_LHDC_QUALITY_LOW:
+          p_a2dp_offload->codec_info[A2DP_OFFLOAD_LHDC_CFG_BITRATE_L] = (uint8_t) (((uint16_t) A2DP_OFFLOAD_LHDC_QUALITY_LOW) & ((uint16_t) 0xFF));
+          p_a2dp_offload->codec_info[A2DP_OFFLOAD_LHDC_CFG_BITRATE_H] = (uint8_t) ((((uint16_t) A2DP_OFFLOAD_LHDC_QUALITY_LOW) >> 8) & ((uint16_t) 0xFF));
+          break;
+        case A2DP_LHDC_QUALITY_MID:
+          p_a2dp_offload->codec_info[A2DP_OFFLOAD_LHDC_CFG_BITRATE_L] = (uint8_t) (((uint16_t) A2DP_OFFLOAD_LHDC_QUALITY_MID) & ((uint16_t) 0xFF));
+          p_a2dp_offload->codec_info[A2DP_OFFLOAD_LHDC_CFG_BITRATE_H] = (uint8_t) ((((uint16_t) A2DP_OFFLOAD_LHDC_QUALITY_MID) >> 8) & ((uint16_t) 0xFF));
+          break;
+        case A2DP_LHDC_QUALITY_HIGH:
+        case A2DP_LHDC_QUALITY_HIGH1: //HIGH1 not supported in LHDC V3
+          p_a2dp_offload->codec_info[A2DP_OFFLOAD_LHDC_CFG_BITRATE_L] = (uint8_t) (((uint16_t) A2DP_OFFLOAD_LHDC_QUALITY_HIGH) & ((uint16_t) 0xFF));
+          p_a2dp_offload->codec_info[A2DP_OFFLOAD_LHDC_CFG_BITRATE_H] = (uint8_t) ((((uint16_t) A2DP_OFFLOAD_LHDC_QUALITY_HIGH) >> 8) & ((uint16_t) 0xFF));
+          break;
+        case A2DP_LHDC_QUALITY_ABR:
+          p_a2dp_offload->codec_info[A2DP_OFFLOAD_LHDC_CFG_BITRATE_L] = (uint8_t) (((uint16_t) A2DP_OFFLOAD_LHDC_QUALITY_ABR) & ((uint16_t) 0xFF));
+          p_a2dp_offload->codec_info[A2DP_OFFLOAD_LHDC_CFG_BITRATE_H] = (uint8_t) ((((uint16_t) A2DP_OFFLOAD_LHDC_QUALITY_ABR) >> 8) & ((uint16_t) 0xFF));
+          break;
+        default:
+          p_a2dp_offload->codec_info[A2DP_OFFLOAD_LHDC_CFG_BITRATE_L] = (uint8_t) (((uint16_t) A2DP_OFFLOAD_LHDC_QUALITY_ABR) & ((uint16_t) 0xFF));
+          p_a2dp_offload->codec_info[A2DP_OFFLOAD_LHDC_CFG_BITRATE_H] = (uint8_t) ((((uint16_t) A2DP_OFFLOAD_LHDC_QUALITY_ABR) >> 8) & ((uint16_t) 0xFF));
+          break;
+        }
+        LOG_DEBUG("%s: [LHDC V3] Bit Rate = 0x%02X", __func__,
+            (uint8_t)(codec_config_.codec_specific_1 & 0x0F));
+
+        // max bit rate index
+        if ((codec_config[10] & A2DP_LHDC_MAX_BIT_RATE_MASK) == A2DP_LHDC_MAX_BIT_RATE_400K) {
+          p_a2dp_offload->codec_info[A2DP_OFFLOAD_LHDC_CFG_MAXBITRATE_L] = (uint8_t) (((uint16_t) A2DP_OFFLOAD_LHDC_QUALITY_LOW) & ((uint16_t) 0xFF));
+          p_a2dp_offload->codec_info[A2DP_OFFLOAD_LHDC_CFG_MAXBITRATE_H] = (uint8_t) ((((uint16_t) A2DP_OFFLOAD_LHDC_QUALITY_LOW) >> 8) & ((uint16_t) 0xFF));
+        } else if ((codec_config[10] & A2DP_LHDC_MAX_BIT_RATE_MASK) == A2DP_LHDC_MAX_BIT_RATE_500K) {
+          p_a2dp_offload->codec_info[A2DP_OFFLOAD_LHDC_CFG_MAXBITRATE_L] = (uint8_t) (((uint16_t) A2DP_OFFLOAD_LHDC_QUALITY_MID) & ((uint16_t) 0xFF));
+          p_a2dp_offload->codec_info[A2DP_OFFLOAD_LHDC_CFG_MAXBITRATE_H] = (uint8_t) ((((uint16_t) A2DP_OFFLOAD_LHDC_QUALITY_MID) >> 8) & ((uint16_t) 0xFF));
+        } else {  //default option: A2DP_LHDC_MAX_BIT_RATE_900K
+          p_a2dp_offload->codec_info[A2DP_OFFLOAD_LHDC_CFG_MAXBITRATE_L] = (uint8_t) (((uint16_t) A2DP_OFFLOAD_LHDC_QUALITY_HIGH) & ((uint16_t) 0xFF));
+          p_a2dp_offload->codec_info[A2DP_OFFLOAD_LHDC_CFG_MAXBITRATE_H] = (uint8_t) ((((uint16_t) A2DP_OFFLOAD_LHDC_QUALITY_HIGH) >> 8) & ((uint16_t) 0xFF));
+        }
+        LOG_DEBUG("%s: [LHDC V3] Max Bit Rate = 0x%02X", __func__,
+            codec_config[10] & A2DP_LHDC_MAX_BIT_RATE_MASK);
+
+        // min bit rate index
+        if ((codec_config[11] & A2DP_LHDC_FEATURE_MIN_BR) == A2DP_LHDC_FEATURE_MIN_BR) {
+          p_a2dp_offload->codec_info[A2DP_OFFLOAD_LHDC_CFG_MINBITRATE_L] = (uint8_t) (((uint16_t) A2DP_OFFLOAD_LHDC_QUALITY_LOW4) & ((uint16_t) 0xFF));
+          p_a2dp_offload->codec_info[A2DP_OFFLOAD_LHDC_CFG_MINBITRATE_H] = (uint8_t) ((((uint16_t) A2DP_OFFLOAD_LHDC_QUALITY_LOW4) >> 8) & ((uint16_t) 0xFF));
+        } else {
+          p_a2dp_offload->codec_info[A2DP_OFFLOAD_LHDC_CFG_MINBITRATE_L] = (uint8_t) (((uint16_t) A2DP_OFFLOAD_LHDC_QUALITY_LOW1) & ((uint16_t) 0xFF));
+          p_a2dp_offload->codec_info[A2DP_OFFLOAD_LHDC_CFG_MINBITRATE_H] = (uint8_t) ((((uint16_t) A2DP_OFFLOAD_LHDC_QUALITY_LOW1) >> 8) & ((uint16_t) 0xFF));
+        }
+        LOG_DEBUG("%s: [LHDC V3] Min Bit Rate = 0x%02X", __func__,
+            codec_config[11] & A2DP_LHDC_FEATURE_MIN_BR);
+
+        // frameDuration - not supported
+        // p_a2dp_offload->codec_info[13]
+
+        // data interval
+        if ((codec_config[10] & A2DP_LHDC_LL_MASK) != 0) {
+          // LL is enabled (10 ms)
+          p_a2dp_offload->codec_info[A2DP_OFFLOAD_LHDC_CFG_INTERVAL] = A2DP_OFFLOAD_LHDC_DATA_INTERVAL_10MS;
+          LOG_DEBUG("%s: [LHDC V3] Low Latency mode", __func__);
+        } else {
+          // LL is disabled (20ms)
+          p_a2dp_offload->codec_info[A2DP_OFFLOAD_LHDC_CFG_INTERVAL] = A2DP_OFFLOAD_LHDC_DATA_INTERVAL_20MS;
+          LOG_DEBUG("%s: [LHDC V3] Normal Latency mode", __func__);
+        }
+
+        // Codec specific 1
+        if ((codec_config[9] & A2DP_LHDC_FEATURE_AR) != 0) {
+          // AR
+          p_a2dp_offload->codec_info[A2DP_OFFLOAD_LHDC_CFG_SPEC1] |= A2DP_OFFLOAD_LHDC_SPECIFIC_FEATURE_AR;
+          LOG_DEBUG("%s: [LHDC V3] Has feature AR", __func__);
+        }
+        if ((codec_config[9] & A2DP_LHDC_FEATURE_JAS) != 0) {
+          // JAS
+          p_a2dp_offload->codec_info[A2DP_OFFLOAD_LHDC_CFG_SPEC1] |= A2DP_OFFLOAD_LHDC_SPECIFIC_FEATURE_JAS;
+          LOG_DEBUG("%s: [LHDC V3] Has feature JAS", __func__);
+        }
+        if ((codec_config[11] & A2DP_LHDC_FEATURE_META) != 0) {
+          // META
+          p_a2dp_offload->codec_info[A2DP_OFFLOAD_LHDC_CFG_SPEC1] |= A2DP_OFFLOAD_LHDC_SPECIFIC_FEATURE_META;
+          LOG_DEBUG("%s: [LHDC V3] Has feature META", __func__);
+        }
+
+        // Codec specific 2
+        if ((codec_config[11] & A2DP_LHDC_CH_SPLIT_MSK) == A2DP_LHDC_CH_SPLIT_NONE) {
+          // split mode disabled
+          p_a2dp_offload->codec_info[A2DP_OFFLOAD_LHDC_CFG_SPEC2] = 0;
+          LOG_DEBUG("%s: [LHDC V3] No ch split", __func__);
+        } else if ((codec_config[11] & A2DP_LHDC_CH_SPLIT_MSK) == A2DP_LHDC_CH_SPLIT_TWS) {
+          // split mode enabled
+          p_a2dp_offload->codec_info[A2DP_OFFLOAD_LHDC_CFG_SPEC2] |= A2DP_OFFLOAD_LHDC_SPECIFIC_FEATURE_SPLIT;
+          LOG_DEBUG("%s: [LHDC V3] Has ch split", __func__);
+        } else {
+          LOG_ERROR("%s: [LHDC V3] Unsupported split mode 0x%x", __func__,
+              codec_config[11] & A2DP_LHDC_CH_SPLIT_MSK);
+          goto fail;
+        }
+
+      } else if (vendor_id == A2DP_LHDC_VENDOR_ID && codec_id == A2DP_LHDCV2_CODEC_ID) {
+        //
+        // LHDC V2
+        //
+        // Version
+        if ((codec_config[10] & A2DP_LHDC_VERSION_MASK) > A2DP_LHDC_VER2) {
+          LOG_ERROR("%s: [LHDC V2] Unsupported version 0x%x", __func__,
+              (codec_config[10] & A2DP_LHDC_VERSION_MASK));
+          goto fail;
+        }
+        p_a2dp_offload->codec_info[A2DP_OFFLOAD_LHDC_CFG_VER] = 1 << (A2DP_OFFLOAD_LHDCV2_VER_1-1);
+        LOG_DEBUG("%s: [LHDC V2] version (0x%02X)", __func__,
+            p_a2dp_offload->codec_info[A2DP_OFFLOAD_LHDC_CFG_VER]);
+
+        // bit rate index
+        switch (codec_config_.codec_specific_1 & 0x0F) {
+        case A2DP_LHDC_QUALITY_LOW0:
+          p_a2dp_offload->codec_info[A2DP_OFFLOAD_LHDC_CFG_BITRATE_L] = (uint8_t) (((uint16_t) A2DP_OFFLOAD_LHDC_QUALITY_LOW0) & ((uint16_t) 0xFF));
+          p_a2dp_offload->codec_info[A2DP_OFFLOAD_LHDC_CFG_BITRATE_H] = (uint8_t) ((((uint16_t) A2DP_OFFLOAD_LHDC_QUALITY_LOW0) >> 8) & ((uint16_t) 0xFF));
+          break;
+        case A2DP_LHDC_QUALITY_LOW1:
+          p_a2dp_offload->codec_info[A2DP_OFFLOAD_LHDC_CFG_BITRATE_L] = (uint8_t) (((uint16_t) A2DP_OFFLOAD_LHDC_QUALITY_LOW1) & ((uint16_t) 0xFF));
+          p_a2dp_offload->codec_info[A2DP_OFFLOAD_LHDC_CFG_BITRATE_H] = (uint8_t) ((((uint16_t) A2DP_OFFLOAD_LHDC_QUALITY_LOW1) >> 8) & ((uint16_t) 0xFF));
+          break;
+        case A2DP_LHDC_QUALITY_LOW2:
+          p_a2dp_offload->codec_info[A2DP_OFFLOAD_LHDC_CFG_BITRATE_L] = (uint8_t) (((uint16_t) A2DP_OFFLOAD_LHDC_QUALITY_LOW2) & ((uint16_t) 0xFF));
+          p_a2dp_offload->codec_info[A2DP_OFFLOAD_LHDC_CFG_BITRATE_H] = (uint8_t) ((((uint16_t) A2DP_OFFLOAD_LHDC_QUALITY_LOW2) >> 8) & ((uint16_t) 0xFF));
+          break;
+        case A2DP_LHDC_QUALITY_LOW3:
+          p_a2dp_offload->codec_info[A2DP_OFFLOAD_LHDC_CFG_BITRATE_L] = (uint8_t) (((uint16_t) A2DP_OFFLOAD_LHDC_QUALITY_LOW3) & ((uint16_t) 0xFF));
+          p_a2dp_offload->codec_info[A2DP_OFFLOAD_LHDC_CFG_BITRATE_H] = (uint8_t) ((((uint16_t) A2DP_OFFLOAD_LHDC_QUALITY_LOW3) >> 8) & ((uint16_t) 0xFF));
+          break;
+        case A2DP_LHDC_QUALITY_LOW4:
+          p_a2dp_offload->codec_info[A2DP_OFFLOAD_LHDC_CFG_BITRATE_L] = (uint8_t) (((uint16_t) A2DP_OFFLOAD_LHDC_QUALITY_LOW4) & ((uint16_t) 0xFF));
+          p_a2dp_offload->codec_info[A2DP_OFFLOAD_LHDC_CFG_BITRATE_H] = (uint8_t) ((((uint16_t) A2DP_OFFLOAD_LHDC_QUALITY_LOW4) >> 8) & ((uint16_t) 0xFF));
+          break;
+        case A2DP_LHDC_QUALITY_LOW:
+          p_a2dp_offload->codec_info[A2DP_OFFLOAD_LHDC_CFG_BITRATE_L] = (uint8_t) (((uint16_t) A2DP_OFFLOAD_LHDC_QUALITY_LOW) & ((uint16_t) 0xFF));
+          p_a2dp_offload->codec_info[A2DP_OFFLOAD_LHDC_CFG_BITRATE_H] = (uint8_t) ((((uint16_t) A2DP_OFFLOAD_LHDC_QUALITY_LOW) >> 8) & ((uint16_t) 0xFF));
+          break;
+        case A2DP_LHDC_QUALITY_MID:
+          p_a2dp_offload->codec_info[A2DP_OFFLOAD_LHDC_CFG_BITRATE_L] = (uint8_t) (((uint16_t) A2DP_OFFLOAD_LHDC_QUALITY_MID) & ((uint16_t) 0xFF));
+          p_a2dp_offload->codec_info[A2DP_OFFLOAD_LHDC_CFG_BITRATE_H] = (uint8_t) ((((uint16_t) A2DP_OFFLOAD_LHDC_QUALITY_MID) >> 8) & ((uint16_t) 0xFF));
+          break;
+        case A2DP_LHDC_QUALITY_HIGH:
+        case A2DP_LHDC_QUALITY_HIGH1: //HIGH1 not supported in LHDC V2
+          p_a2dp_offload->codec_info[A2DP_OFFLOAD_LHDC_CFG_BITRATE_L] = (uint8_t) (((uint16_t) A2DP_OFFLOAD_LHDC_QUALITY_HIGH) & ((uint16_t) 0xFF));
+          p_a2dp_offload->codec_info[A2DP_OFFLOAD_LHDC_CFG_BITRATE_H] = (uint8_t) ((((uint16_t) A2DP_OFFLOAD_LHDC_QUALITY_HIGH) >> 8) & ((uint16_t) 0xFF));
+          break;
+        case A2DP_LHDC_QUALITY_ABR:
+          p_a2dp_offload->codec_info[A2DP_OFFLOAD_LHDC_CFG_BITRATE_L] = (uint8_t) (((uint16_t) A2DP_OFFLOAD_LHDC_QUALITY_ABR) & ((uint16_t) 0xFF));
+          p_a2dp_offload->codec_info[A2DP_OFFLOAD_LHDC_CFG_BITRATE_H] = (uint8_t) ((((uint16_t) A2DP_OFFLOAD_LHDC_QUALITY_ABR) >> 8) & ((uint16_t) 0xFF));
+          break;
+        default:
+          p_a2dp_offload->codec_info[A2DP_OFFLOAD_LHDC_CFG_BITRATE_L] = (uint8_t) (((uint16_t) A2DP_OFFLOAD_LHDC_QUALITY_ABR) & ((uint16_t) 0xFF));
+          p_a2dp_offload->codec_info[A2DP_OFFLOAD_LHDC_CFG_BITRATE_H] = (uint8_t) ((((uint16_t) A2DP_OFFLOAD_LHDC_QUALITY_ABR) >> 8) & ((uint16_t) 0xFF));
+          break;
+        }
+        LOG_DEBUG("%s: [LHDC V2] Bit Rate = 0x%02X", __func__,
+            (uint8_t)codec_config_.codec_specific_1 & 0x0F);
+
+        // max bit rate index
+        if ((codec_config[10] & A2DP_LHDC_MAX_BIT_RATE_MASK) == A2DP_LHDC_MAX_BIT_RATE_400K) {
+          p_a2dp_offload->codec_info[A2DP_OFFLOAD_LHDC_CFG_MAXBITRATE_L] = (uint8_t) (((uint16_t) A2DP_OFFLOAD_LHDC_QUALITY_LOW) & ((uint16_t) 0xFF));
+          p_a2dp_offload->codec_info[A2DP_OFFLOAD_LHDC_CFG_MAXBITRATE_H] = (uint8_t) ((((uint16_t) A2DP_OFFLOAD_LHDC_QUALITY_LOW) >> 8) & ((uint16_t) 0xFF));
+        } else if ((codec_config[10] & A2DP_LHDC_MAX_BIT_RATE_MASK) == A2DP_LHDC_MAX_BIT_RATE_500K) {
+          p_a2dp_offload->codec_info[A2DP_OFFLOAD_LHDC_CFG_MAXBITRATE_L] = (uint8_t) (((uint16_t) A2DP_OFFLOAD_LHDC_QUALITY_MID) & ((uint16_t) 0xFF));
+          p_a2dp_offload->codec_info[A2DP_OFFLOAD_LHDC_CFG_MAXBITRATE_H] = (uint8_t) ((((uint16_t) A2DP_OFFLOAD_LHDC_QUALITY_MID) >> 8) & ((uint16_t) 0xFF));
+        } else {  //default option: A2DP_LHDC_MAX_BIT_RATE_900K
+          p_a2dp_offload->codec_info[A2DP_OFFLOAD_LHDC_CFG_MAXBITRATE_L] = (uint8_t) (((uint16_t) A2DP_OFFLOAD_LHDC_QUALITY_HIGH) & ((uint16_t) 0xFF));
+          p_a2dp_offload->codec_info[A2DP_OFFLOAD_LHDC_CFG_MAXBITRATE_H] = (uint8_t) ((((uint16_t) A2DP_OFFLOAD_LHDC_QUALITY_HIGH) >> 8) & ((uint16_t) 0xFF));
+        }
+        LOG_DEBUG("%s: [LHDC V2] Max Bit Rate = 0x%02X", __func__,
+            codec_config[10] & A2DP_LHDC_MAX_BIT_RATE_MASK);
+
+        // min bit rate index - not supported
+        //p_a2dp_offload->codec_info[A2DP_OFFLOAD_LHDC_CFG_MINBITRATE_L]
+        //p_a2dp_offload->codec_info[A2DP_OFFLOAD_LHDC_CFG_MINBITRATE_H]
+
+        // frameDuration - not supported
+        //p_a2dp_offload->codec_info[A2DP_OFFLOAD_LHDC_CFG_FRAMEDUR]
+
+        // data interval
+        if ((codec_config[10] & A2DP_LHDC_LL_MASK) != 0) {
+          // LL is enabled (10 ms)
+          p_a2dp_offload->codec_info[A2DP_OFFLOAD_LHDC_CFG_INTERVAL] = A2DP_OFFLOAD_LHDC_DATA_INTERVAL_10MS;
+          LOG_DEBUG("%s: [LHDC V2] Low Latency mode", __func__);
+        } else {
+          // LL is disabled (20ms)
+          p_a2dp_offload->codec_info[A2DP_OFFLOAD_LHDC_CFG_INTERVAL] = A2DP_OFFLOAD_LHDC_DATA_INTERVAL_20MS;
+          LOG_DEBUG("%s: [LHDC V2] Normal Latency mode", __func__);
+        }
+
+        // Codec specific 1 - not supported
+        // p_a2dp_offload->codec_info[A2DP_OFFLOAD_LHDC_CFG_SPEC1]
+
+        // Codec specific 2
+        if ((codec_config[11] & A2DP_LHDC_CH_SPLIT_MSK) == A2DP_LHDC_CH_SPLIT_NONE) {
+          // split mode disabled
+          p_a2dp_offload->codec_info[A2DP_OFFLOAD_LHDC_CFG_SPEC2] = 0;
+          LOG_DEBUG("%s: [LHDC V2] No ch split", __func__);
+        } else if ((codec_config[11] & A2DP_LHDC_CH_SPLIT_MSK) == A2DP_LHDC_CH_SPLIT_TWS) {
+          // split mode enabled
+          p_a2dp_offload->codec_info[A2DP_OFFLOAD_LHDC_CFG_SPEC2] |= A2DP_OFFLOAD_LHDC_SPECIFIC_FEATURE_SPLIT;
+          LOG_DEBUG("%s: [LHDC V2] Has ch split", __func__);
+        } else {
+          LOG_ERROR("%s: [LHDC V2] Unsupported split mode 0x%x", __func__,
+              codec_config[11] & A2DP_LHDC_CH_SPLIT_MSK);
+          goto fail;
+        }
+      } else if (vendor_id == A2DP_LHDC_VENDOR_ID && codec_id == A2DP_LHDCV5_CODEC_ID) {
+        //
+        // LHDC V5
+        //
+
+        // Version
+        if ((codec_config[11] & A2DP_LHDCV5_VERSION_MASK) != A2DP_LHDCV5_VER_1) {
+          LOG_ERROR("%s: [LHDC V5] unsupported version 0x%x", __func__,
+              (codec_config[11] & A2DP_LHDCV5_VERSION_MASK));
+          goto fail;
+        }
+        p_a2dp_offload->codec_info[A2DP_OFFLOAD_LHDC_CFG_VER] = 1 << (A2DP_OFFLOAD_LHDCV5_VER_1-1);
+        LOG_DEBUG("%s: [LHDC V5] version (0x%02X)", __func__,
+            p_a2dp_offload->codec_info[A2DP_OFFLOAD_LHDC_CFG_VER]);
+
+        // bit rate index
+        switch (codec_config_.codec_specific_1 & 0xF) {
+        case A2DP_LHDCV5_QUALITY_LOW0:
+          p_a2dp_offload->codec_info[A2DP_OFFLOAD_LHDC_CFG_BITRATE_L] = (uint8_t) (((uint16_t) A2DP_OFFLOAD_LHDC_QUALITY_LOW0) & ((uint16_t) 0xFF));
+          p_a2dp_offload->codec_info[A2DP_OFFLOAD_LHDC_CFG_BITRATE_H] = (uint8_t) ((((uint16_t) A2DP_OFFLOAD_LHDC_QUALITY_LOW0) >> 8) & ((uint16_t) 0xFF));
+          break;
+        case A2DP_LHDCV5_QUALITY_LOW1:
+          p_a2dp_offload->codec_info[A2DP_OFFLOAD_LHDC_CFG_BITRATE_L] = (uint8_t) (((uint16_t) A2DP_OFFLOAD_LHDC_QUALITY_LOW1) & ((uint16_t) 0xFF));
+          p_a2dp_offload->codec_info[A2DP_OFFLOAD_LHDC_CFG_BITRATE_H] = (uint8_t) ((((uint16_t) A2DP_OFFLOAD_LHDC_QUALITY_LOW1) >> 8) & ((uint16_t) 0xFF));
+          break;
+        case A2DP_LHDCV5_QUALITY_LOW2:
+          p_a2dp_offload->codec_info[A2DP_OFFLOAD_LHDC_CFG_BITRATE_L] = (uint8_t) (((uint16_t) A2DP_OFFLOAD_LHDC_QUALITY_LOW2) & ((uint16_t) 0xFF));
+          p_a2dp_offload->codec_info[A2DP_OFFLOAD_LHDC_CFG_BITRATE_H] = (uint8_t) ((((uint16_t) A2DP_OFFLOAD_LHDC_QUALITY_LOW2) >> 8) & ((uint16_t) 0xFF));
+          break;
+        case A2DP_LHDCV5_QUALITY_LOW3:
+          p_a2dp_offload->codec_info[A2DP_OFFLOAD_LHDC_CFG_BITRATE_L] = (uint8_t) (((uint16_t) A2DP_OFFLOAD_LHDC_QUALITY_LOW3) & ((uint16_t) 0xFF));
+          p_a2dp_offload->codec_info[A2DP_OFFLOAD_LHDC_CFG_BITRATE_H] = (uint8_t) ((((uint16_t) A2DP_OFFLOAD_LHDC_QUALITY_LOW3) >> 8) & ((uint16_t) 0xFF));
+          break;
+        case A2DP_LHDCV5_QUALITY_LOW4:
+          p_a2dp_offload->codec_info[A2DP_OFFLOAD_LHDC_CFG_BITRATE_L] = (uint8_t) (((uint16_t) A2DP_OFFLOAD_LHDC_QUALITY_LOW4) & ((uint16_t) 0xFF));
+          p_a2dp_offload->codec_info[A2DP_OFFLOAD_LHDC_CFG_BITRATE_H] = (uint8_t) ((((uint16_t) A2DP_OFFLOAD_LHDC_QUALITY_LOW4) >> 8) & ((uint16_t) 0xFF));
+          break;
+        case A2DP_LHDCV5_QUALITY_LOW:
+          p_a2dp_offload->codec_info[A2DP_OFFLOAD_LHDC_CFG_BITRATE_L] = (uint8_t) (((uint16_t) A2DP_OFFLOAD_LHDC_QUALITY_LOW) & ((uint16_t) 0xFF));
+          p_a2dp_offload->codec_info[A2DP_OFFLOAD_LHDC_CFG_BITRATE_H] = (uint8_t) ((((uint16_t) A2DP_OFFLOAD_LHDC_QUALITY_LOW) >> 8) & ((uint16_t) 0xFF));
+          break;
+        case A2DP_LHDCV5_QUALITY_MID:
+          p_a2dp_offload->codec_info[A2DP_OFFLOAD_LHDC_CFG_BITRATE_L] = (uint8_t) (((uint16_t) A2DP_OFFLOAD_LHDC_QUALITY_MID) & ((uint16_t) 0xFF));
+          p_a2dp_offload->codec_info[A2DP_OFFLOAD_LHDC_CFG_BITRATE_H] = (uint8_t) ((((uint16_t) A2DP_OFFLOAD_LHDC_QUALITY_MID) >> 8) & ((uint16_t) 0xFF));
+          break;
+        case A2DP_LHDCV5_QUALITY_HIGH:
+          p_a2dp_offload->codec_info[A2DP_OFFLOAD_LHDC_CFG_BITRATE_L] = (uint8_t) (((uint16_t) A2DP_OFFLOAD_LHDC_QUALITY_HIGH) & ((uint16_t) 0xFF));
+          p_a2dp_offload->codec_info[A2DP_OFFLOAD_LHDC_CFG_BITRATE_H] = (uint8_t) ((((uint16_t) A2DP_OFFLOAD_LHDC_QUALITY_HIGH) >> 8) & ((uint16_t) 0xFF));
+          break;
+        case A2DP_LHDCV5_QUALITY_HIGH1:
+          p_a2dp_offload->codec_info[A2DP_OFFLOAD_LHDC_CFG_BITRATE_L] = (uint8_t) (((uint16_t) A2DP_OFFLOAD_LHDC_QUALITY_HIGH1) & ((uint16_t) 0xFF));
+          p_a2dp_offload->codec_info[A2DP_OFFLOAD_LHDC_CFG_BITRATE_H] = (uint8_t) ((((uint16_t) A2DP_OFFLOAD_LHDC_QUALITY_HIGH1) >> 8) & ((uint16_t) 0xFF));
+          break;
+        case A2DP_LHDCV5_QUALITY_ABR:
+          p_a2dp_offload->codec_info[A2DP_OFFLOAD_LHDC_CFG_BITRATE_L] = (uint8_t) (((uint16_t) A2DP_OFFLOAD_LHDC_QUALITY_ABR) & ((uint16_t) 0xFF));
+          p_a2dp_offload->codec_info[A2DP_OFFLOAD_LHDC_CFG_BITRATE_H] = (uint8_t) ((((uint16_t) A2DP_OFFLOAD_LHDC_QUALITY_ABR) >> 8) & ((uint16_t) 0xFF));
+          break;
+        default:
+          p_a2dp_offload->codec_info[A2DP_OFFLOAD_LHDC_CFG_BITRATE_L] = (uint8_t) (((uint16_t) A2DP_OFFLOAD_LHDC_QUALITY_ABR) & ((uint16_t) 0xFF));
+          p_a2dp_offload->codec_info[A2DP_OFFLOAD_LHDC_CFG_BITRATE_H] = (uint8_t) ((((uint16_t) A2DP_OFFLOAD_LHDC_QUALITY_ABR) >> 8) & ((uint16_t) 0xFF));
+          break;
+        }
+        LOG_DEBUG("%s: [LHDC V5] Bit Rate = 0x%02X", __func__,
+            (uint8_t)codec_config_.codec_specific_1 & 0x0F);
+
+        // max bit rate index
+        if ((codec_config[10] & A2DP_LHDCV5_MAX_BIT_RATE_MASK) == A2DP_LHDCV5_MAX_BIT_RATE_400K) {
+          p_a2dp_offload->codec_info[A2DP_OFFLOAD_LHDC_CFG_MAXBITRATE_L] = (uint8_t) (((uint16_t) A2DP_OFFLOAD_LHDC_QUALITY_LOW) & ((uint16_t) 0xFF));
+          p_a2dp_offload->codec_info[A2DP_OFFLOAD_LHDC_CFG_MAXBITRATE_H] = (uint8_t) ((((uint16_t) A2DP_OFFLOAD_LHDC_QUALITY_LOW) >> 8) & ((uint16_t) 0xFF));
+        } else if ((codec_config[10] & A2DP_LHDCV5_MAX_BIT_RATE_MASK) == A2DP_LHDCV5_MAX_BIT_RATE_500K) {
+          p_a2dp_offload->codec_info[A2DP_OFFLOAD_LHDC_CFG_MAXBITRATE_L] = (uint8_t) (((uint16_t) A2DP_OFFLOAD_LHDC_QUALITY_MID) & ((uint16_t) 0xFF));
+          p_a2dp_offload->codec_info[A2DP_OFFLOAD_LHDC_CFG_MAXBITRATE_H] = (uint8_t) ((((uint16_t) A2DP_OFFLOAD_LHDC_QUALITY_MID) >> 8) & ((uint16_t) 0xFF));
+        } else if ((codec_config[10] & A2DP_LHDCV5_MAX_BIT_RATE_MASK) == A2DP_LHDCV5_MAX_BIT_RATE_900K) {
+          p_a2dp_offload->codec_info[A2DP_OFFLOAD_LHDC_CFG_MAXBITRATE_L] = (uint8_t) (((uint16_t) A2DP_OFFLOAD_LHDC_QUALITY_HIGH) & ((uint16_t) 0xFF));
+          p_a2dp_offload->codec_info[A2DP_OFFLOAD_LHDC_CFG_MAXBITRATE_H] = (uint8_t) ((((uint16_t) A2DP_OFFLOAD_LHDC_QUALITY_HIGH) >> 8) & ((uint16_t) 0xFF));
+        } else {
+          p_a2dp_offload->codec_info[A2DP_OFFLOAD_LHDC_CFG_MAXBITRATE_L] = (uint8_t) (((uint16_t) A2DP_OFFLOAD_LHDC_QUALITY_HIGH1) & ((uint16_t) 0xFF));
+          p_a2dp_offload->codec_info[A2DP_OFFLOAD_LHDC_CFG_MAXBITRATE_H] = (uint8_t) ((((uint16_t) A2DP_OFFLOAD_LHDC_QUALITY_HIGH1) >> 8) & ((uint16_t) 0xFF));
+        }
+        LOG_DEBUG("%s: [LHDC V5] Max Bit Rate = 0x%02X", __func__,
+            codec_config[10] & A2DP_LHDCV5_MAX_BIT_RATE_MASK);
+
+        // min bit rate index
+        if ((codec_config[10] & A2DP_LHDCV5_MIN_BIT_RATE_MASK) == A2DP_LHDCV5_MIN_BIT_RATE_64K) {
+          p_a2dp_offload->codec_info[A2DP_OFFLOAD_LHDC_CFG_MINBITRATE_L] = (uint8_t) (((uint16_t) A2DP_OFFLOAD_LHDC_QUALITY_LOW0) & ((uint16_t) 0xFF));
+          p_a2dp_offload->codec_info[A2DP_OFFLOAD_LHDC_CFG_MINBITRATE_H] = (uint8_t) ((((uint16_t) A2DP_OFFLOAD_LHDC_QUALITY_LOW0) >> 8) & ((uint16_t) 0xFF));
+        } else if ((codec_config[10] & A2DP_LHDCV5_MIN_BIT_RATE_MASK) == A2DP_LHDCV5_MIN_BIT_RATE_128K) {
+          p_a2dp_offload->codec_info[A2DP_OFFLOAD_LHDC_CFG_MINBITRATE_L] = (uint8_t) (((uint16_t) A2DP_OFFLOAD_LHDC_QUALITY_LOW1) & ((uint16_t) 0xFF));
+          p_a2dp_offload->codec_info[A2DP_OFFLOAD_LHDC_CFG_MINBITRATE_H] = (uint8_t) ((((uint16_t) A2DP_OFFLOAD_LHDC_QUALITY_LOW1) >> 8) & ((uint16_t) 0xFF));
+        } else if ((codec_config[10] & A2DP_LHDCV5_MIN_BIT_RATE_MASK) == A2DP_LHDCV5_MIN_BIT_RATE_256K) {
+          p_a2dp_offload->codec_info[A2DP_OFFLOAD_LHDC_CFG_MINBITRATE_L] = (uint8_t) (((uint16_t) A2DP_OFFLOAD_LHDC_QUALITY_LOW3) & ((uint16_t) 0xFF));
+          p_a2dp_offload->codec_info[A2DP_OFFLOAD_LHDC_CFG_MINBITRATE_H] = (uint8_t) ((((uint16_t) A2DP_OFFLOAD_LHDC_QUALITY_LOW3) >> 8) & ((uint16_t) 0xFF));
+        } else {
+          p_a2dp_offload->codec_info[A2DP_OFFLOAD_LHDC_CFG_MINBITRATE_L] = (uint8_t) (((uint16_t) A2DP_OFFLOAD_LHDC_QUALITY_LOW) & ((uint16_t) 0xFF));
+          p_a2dp_offload->codec_info[A2DP_OFFLOAD_LHDC_CFG_MINBITRATE_H] = (uint8_t) ((((uint16_t) A2DP_OFFLOAD_LHDC_QUALITY_LOW) >> 8) & ((uint16_t) 0xFF));
+        }
+        LOG_DEBUG("%s: [LHDC V5] Min Bit Rate = 0x%02X", __func__,
+            codec_config[10] & A2DP_LHDCV5_MIN_BIT_RATE_MASK);
+
+        // frame duration
+        if ((codec_config[11] & A2DP_LHDCV5_FRAME_LEN_MASK) != 0) {
+          p_a2dp_offload->codec_info[A2DP_OFFLOAD_LHDC_CFG_FRAMEDUR] = A2DP_OFFLOAD_LHDC_FRAME_DURATION_5000US;
+          LOG_DEBUG("%s: [LHDC V5] Frame Duration: 5ms ", __func__);
+        } else {
+          LOG_ERROR("%s: [LHDC V5] unsupported frame duration 0x%x", __func__,
+              codec_config[11] & A2DP_LHDCV5_FRAME_LEN_MASK);
+          goto fail;
+        }
+
+        // data interval
+        if ((codec_config[12] & A2DP_LHDCV5_FEATURE_LL) != 0) {
+          // LL is disabled (10 ms)
+          p_a2dp_offload->codec_info[A2DP_OFFLOAD_LHDC_CFG_INTERVAL] = A2DP_OFFLOAD_LHDC_DATA_INTERVAL_10MS;
+          LOG_DEBUG("%s: [LHDC V5] Low Latency mode", __func__);
+        } else {
+          // LL is enabled (20ms)
+          p_a2dp_offload->codec_info[A2DP_OFFLOAD_LHDC_CFG_INTERVAL] = A2DP_OFFLOAD_LHDC_DATA_INTERVAL_20MS;
+          LOG_DEBUG("%s: [LHDC V5] Normal Latency mode", __func__);
+        }
+
+        // Codec specific 1
+        if ((codec_config[12] & A2DP_LHDCV5_FEATURE_AR) != 0) {
+          // AR
+          p_a2dp_offload->codec_info[A2DP_OFFLOAD_LHDC_CFG_SPEC1] |= A2DP_OFFLOAD_LHDC_SPECIFIC_FEATURE_AR;
+          LOG_DEBUG("%s: [LHDC V5] Has feature AR", __func__);
+        }
+        if ((codec_config[12] & A2DP_LHDCV5_FEATURE_JAS) != 0) {
+          // JAS
+          p_a2dp_offload->codec_info[A2DP_OFFLOAD_LHDC_CFG_SPEC1] |= A2DP_OFFLOAD_LHDC_SPECIFIC_FEATURE_JAS;
+          LOG_DEBUG("%s: [LHDC V5] Has feature JAS", __func__);
+        }
+        if ((codec_config[12] & A2DP_LHDCV5_FEATURE_META) != 0) {
+          // META
+          p_a2dp_offload->codec_info[A2DP_OFFLOAD_LHDC_CFG_SPEC1] |= A2DP_OFFLOAD_LHDC_SPECIFIC_FEATURE_META;
+          LOG_DEBUG("%s: [LHDC V5] Has feature META", __func__);
+        }
+
+        // Codec specific 2
+        if ((codec_config[13] & A2DP_LHDCV5_AR_ON) != 0) {
+          // AR_ON
+          p_a2dp_offload->codec_info[A2DP_OFFLOAD_LHDC_CFG_SPEC2] |= A2DP_OFFLOAD_LHDC_SPECIFIC_ACTION_AR_ON;
+          LOG_DEBUG("%s: [LHDC V5] AR_ON is set", __func__);
+        }
+      }
+      // Savitech Patch - END
       break;
 #endif
     default:
       break;
   }
   return true;
+
+fail:
+  return false;
 }
 
 bool A2dpCodecConfig::isValid() const { return true; }
@@ -625,10 +1039,7 @@ bool A2dpCodecs::init() {
       } else if (strcmp(tok, "ldac") == 0) {
         LOG_INFO("%s: LDAC offload supported", __func__);
         offload_codec_support[BTAV_A2DP_CODEC_INDEX_SOURCE_LDAC] = true;
-      } else if (strcmp(tok, "lhdcv1") == 0) {  // Savitech LHDC
-        LOG_INFO("%s: LHDCV1 offload not supported", __func__);
-        offload_codec_support[BTAV_A2DP_CODEC_INDEX_SOURCE_LHDCV1] = false;
-      } else if (strcmp(tok, "lhdcv2") == 0) {
+      } else if (strcmp(tok, "lhdcv2") == 0) {  // Savitech LHDC
         LOG_INFO("%s: LHDCV2 offload not supported", __func__);
         offload_codec_support[BTAV_A2DP_CODEC_INDEX_SOURCE_LHDCV2] = false;
       } else if (strcmp(tok, "lhdcv3") == 0) {
@@ -952,7 +1363,6 @@ int A2dpCodecs::getLHDCCodecUserConfig(
       result = A2dpCodecConfigLhdcV3::getEncoderExtendFuncUserConfig(codecConfig, clen);
     }
     break;
-  case BTAV_A2DP_CODEC_INDEX_SOURCE_LHDCV1:
   case BTAV_A2DP_CODEC_INDEX_SOURCE_LHDCV2:
   default:
     APPL_TRACE_DEBUG("%s: feature not support!", __func__);
@@ -983,7 +1393,6 @@ int A2dpCodecs::setLHDCCodecUserConfig(
   case BTAV_A2DP_CODEC_INDEX_SOURCE_LHDCV3:
     result = A2dpCodecConfigLhdcV3::setEncoderExtendFuncUserConfig(codecConfig, clen);
     break;
-  case BTAV_A2DP_CODEC_INDEX_SOURCE_LHDCV1:
   case BTAV_A2DP_CODEC_INDEX_SOURCE_LHDCV2:
   default:
     APPL_TRACE_DEBUG("%s: peer codecIndex(%d) not support the feature!", __func__, peerCodecIndex);
@@ -1011,7 +1420,6 @@ bool A2dpCodecs::setLHDCCodecUserData(
   case BTAV_A2DP_CODEC_INDEX_SOURCE_LHDCV3:
     A2dpCodecConfigLhdcV3::setEncoderExtendFuncUserData(codecData, clen);
     break;
-  case BTAV_A2DP_CODEC_INDEX_SOURCE_LHDCV1:
   case BTAV_A2DP_CODEC_INDEX_SOURCE_LHDCV2:
   default:
     APPL_TRACE_DEBUG("%s: peer codecIndex(%d) not support the feature!", __func__, peerCodecIndex);
@@ -1039,7 +1447,6 @@ int A2dpCodecs::getLHDCCodecUserApiVer(
   case BTAV_A2DP_CODEC_INDEX_SOURCE_LHDCV3:
     result = A2dpCodecConfigLhdcV3::getEncoderExtendFuncUserApiVer(version, clen);
     break;
-  case BTAV_A2DP_CODEC_INDEX_SOURCE_LHDCV1:
   case BTAV_A2DP_CODEC_INDEX_SOURCE_LHDCV2:
   default:
     APPL_TRACE_DEBUG("%s: peer codecIndex(%d) not support the feature!", __func__, peerCodecIndex);
@@ -1726,11 +2133,14 @@ const tA2DP_DECODER_INTERFACE* A2DP_GetDecoderInterface(
 
   switch (codec_type) {
     case A2DP_MEDIA_CT_SBC:
+      LOG_DEBUG("%s: SBC", __func__);
       return A2DP_GetDecoderInterfaceSbc(p_codec_info);
 #if !defined(EXCLUDE_NONSTANDARD_CODECS)
     case A2DP_MEDIA_CT_AAC:
+      LOG_DEBUG("%s: AAC", __func__);
       return A2DP_GetDecoderInterfaceAac(p_codec_info);
     case A2DP_MEDIA_CT_NON_A2DP:
+      LOG_DEBUG("%s: VENDOR CODEC", __func__);
       return A2DP_VendorGetDecoderInterface(p_codec_info);
 #endif
     default:

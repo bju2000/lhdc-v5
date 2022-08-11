@@ -96,8 +96,6 @@ cc_library_static {
         "a2dp/a2dp_vendor_ldac_abr.cc",
         "a2dp/a2dp_vendor_ldac_decoder.cc",
         "a2dp/a2dp_vendor_ldac_encoder.cc",
-        "a2dp/a2dp_vendor_lhdcv1.cc",
-        "a2dp/a2dp_vendor_lhdcv1_encoder.cc",
         "a2dp/a2dp_vendor_lhdcv2.cc",
         "a2dp/a2dp_vendor_lhdcv2_encoder.cc",
         "a2dp/a2dp_vendor_lhdcv3.cc",

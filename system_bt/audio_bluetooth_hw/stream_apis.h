@@ -26,6 +26,11 @@ constexpr unsigned int kBluetoothDefaultSampleRate = 44100;
 constexpr audio_format_t kBluetoothDefaultAudioFormatBitsPerSample =
     AUDIO_FORMAT_PCM_16_BIT;
 
+// Savitech Patch - Start
+//   LHDC_Low_Latency(non-offload)
+//constexpr bool kBluetoothDefaultAudioFormatLhdcLowLatency = 0;
+// Savitech Patch - End
+
 constexpr unsigned int kBluetoothDefaultInputBufferMs = 20;
 constexpr unsigned int kBluetoothDefaultInputStateTimeoutMs = 20;
 

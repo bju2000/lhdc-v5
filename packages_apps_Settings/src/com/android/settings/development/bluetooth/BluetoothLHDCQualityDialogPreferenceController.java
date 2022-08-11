@@ -36,12 +36,17 @@ import java.util.List;
 public class BluetoothLHDCQualityDialogPreferenceController extends
         AbstractBluetoothDialogPreferenceController {
 
+    // In standard case, low0 is available
+    private static final int index_adjust_offset = 0;
+    // In case of low0 is removed, shift the rest indices
+    //private static final int index_adjust_offset = 1;
+
     private static final String KEY = "bluetooth_select_a2dp_lhdc_playback_quality";
     private static final String TAG = "BtLhdcAudioQualityCtr";
     private static final int DEFAULT_TAG = 0xC000;
     private static final int DEFAULT_MAGIC = 0x8000;
-    private static final int DEFAULT_INDEX = 5;
-    private static final int DEFAULT_MAX_INDEX = 9; //0~9
+    private static final int DEFAULT_INDEX = (5 - index_adjust_offset);
+    private static final int DEFAULT_MAX_INDEX = (9 - index_adjust_offset); //0~9
 
     public BluetoothLHDCQualityDialogPreferenceController(Context context, Lifecycle lifecycle,
                                                       BluetoothA2dpConfigStore store) {
@@ -63,7 +68,7 @@ public class BluetoothLHDCQualityDialogPreferenceController extends
     protected void writeConfigurationValues(final int index) {
         long codecSpecific1Value = 0;
         if (index <= DEFAULT_MAX_INDEX) {
-            codecSpecific1Value = DEFAULT_MAGIC | index;
+            codecSpecific1Value = DEFAULT_MAGIC | (index + index_adjust_offset);
         }else{
             codecSpecific1Value = DEFAULT_MAGIC | DEFAULT_INDEX;
         }
@@ -81,15 +86,13 @@ public class BluetoothLHDCQualityDialogPreferenceController extends
     @Override
     public List<Integer> getSelectableIndex() {
         List<Integer> selectableIndex = new ArrayList<>();
-        /*
         final BluetoothCodecConfig currentConfig = getCurrentCodecConfig();
         if (currentConfig != null) {
-            if (currentConfig.getCodecType() == BluetoothCodecConfig.SOURCE_CODEC_TYPE_LHDCV1 ||
-                currentConfig.getCodecType() == BluetoothCodecConfig.SOURCE_CODEC_TYPE_LHDCV2 ||
+            if (currentConfig.getCodecType() == BluetoothCodecConfig.SOURCE_CODEC_TYPE_LHDCV2 ||
                 currentConfig.getCodecType() == BluetoothCodecConfig.SOURCE_CODEC_TYPE_LHDCV3) {
-                // except 8(ie., 1000K)
+                // excluding 1000Kbps
                 for (int i = 0; i <= DEFAULT_MAX_INDEX; i++) {
-                    if(i != 8) {
+                    if(i != (8 - index_adjust_offset)) {
                         selectableIndex.add(i);
                     }
                 }
@@ -101,7 +104,6 @@ public class BluetoothLHDCQualityDialogPreferenceController extends
                 }
             }
         }
-        */
 
         // All items are available to set from UI but be filtered at native layer.
         for (int i = 0; i <= DEFAULT_MAX_INDEX; i++) {
@@ -113,11 +115,10 @@ public class BluetoothLHDCQualityDialogPreferenceController extends
     @Override
     public void updateState(Preference preference) {
         super.updateState(preference);
-        // Enable preference when current codec type is LHDCV1/V2/V3/V5. For other cases, disable it.
+        // Enable preference when current codec type is LHDC V2/V3/V5. For other cases, disable it.
         final BluetoothCodecConfig currentConfig = getCurrentCodecConfig();
         if (currentConfig != null
-                && (currentConfig.getCodecType() == BluetoothCodecConfig.SOURCE_CODEC_TYPE_LHDCV1 || 
-                    currentConfig.getCodecType() == BluetoothCodecConfig.SOURCE_CODEC_TYPE_LHDCV2 ||
+                && (currentConfig.getCodecType() == BluetoothCodecConfig.SOURCE_CODEC_TYPE_LHDCV2 ||
                     currentConfig.getCodecType() == BluetoothCodecConfig.SOURCE_CODEC_TYPE_LHDCV3 ||
                     currentConfig.getCodecType() == BluetoothCodecConfig.SOURCE_CODEC_TYPE_LHDCV5)
                 ) {
@@ -142,6 +143,6 @@ public class BluetoothLHDCQualityDialogPreferenceController extends
         } else {
             index &= 0xff;
         }
-        return index;
+        return (index - index_adjust_offset);
     }
 }

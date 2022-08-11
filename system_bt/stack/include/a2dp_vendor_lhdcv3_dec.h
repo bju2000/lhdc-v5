@@ -184,8 +184,4 @@ const char* A2DP_VendorCodecIndexStrLhdcV3Sink(void);
 // configuration entry pointed by |p_cfg|.
 bool A2DP_VendorInitCodecConfigLhdcV3Sink(AvdtpSepConfig* p_cfg);
 
-// Get SBC bitrate
-// Returns |uint32_t| bitrate value in bits per second
-uint32_t A2DP_VendorGetBitRateLhdcV3Sink(const uint8_t* p_codec_info);
-
 #endif  // A2DP_VENDOR_LHDCV3_DEC_H

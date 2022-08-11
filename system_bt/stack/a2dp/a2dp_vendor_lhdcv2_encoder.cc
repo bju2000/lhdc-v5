@@ -363,8 +363,6 @@ static void a2dp_vendor_lhdcv2_encoder_update(uint16_t peer_mtu,
   }
   const uint8_t* p_codec_info = codec_info;
   btav_a2dp_codec_config_t codec_config = a2dp_codec_config->getCodecConfig();
-  //btav_a2dp_codec_config_t codec_config_user = a2dp_codec_config->getCodecUserConfig();
-
 
   if (!a2dp_lhdc_encoder_cb.has_lhdc_handle) {
       a2dp_lhdc_encoder_cb.lhdc_handle = lhdc_get_handle_func(A2DP_VendorGetVersionLhdcV2(p_codec_info) <= A2DP_LHDC_VER2 ? 1 : -1);
@@ -411,11 +409,6 @@ static void a2dp_vendor_lhdcv2_encoder_update(uint16_t peer_mtu,
       // adjust non-supported quality modes and wrap to internal library used index
       if (newValue == A2DP_LHDC_QUALITY_ABR) {
         newValue = LHDCBT_QUALITY_AUTO; //9->8
-      } else if (newValue == A2DP_LHDC_QUALITY_HIGH1) {
-        // High1(1000K) does not supported, downgrade to High(900K)
-        newValue = LHDCBT_QUALITY_HIGH; //8->7
-        codec_config.codec_specific_1 = A2DP_LHDC_QUALITY_MAGIC_NUM | A2DP_LHDC_QUALITY_HIGH;
-        //codec_config_user.codec_specific_1 = A2DP_LHDC_QUALITY_MAGIC_NUM | A2DP_LHDC_QUALITY_HIGH;
       }
 
       if (newValue != p_encoder_params->quality_mode_index) {
@@ -425,9 +418,8 @@ static void a2dp_vendor_lhdcv2_encoder_update(uint16_t peer_mtu,
             .c_str(), p_encoder_params->quality_mode_index);
       }
   }else {
-      p_encoder_params->quality_mode_index = LHDCBT_QUALITY_LOW;
-      codec_config.codec_specific_1 = A2DP_LHDC_QUALITY_MAGIC_NUM | A2DP_LHDC_QUALITY_LOW;
-      //codec_config_user.codec_specific_1 = A2DP_LHDC_QUALITY_MAGIC_NUM | A2DP_LHDC_QUALITY_LOW;
+      p_encoder_params->quality_mode_index = LHDCBT_QUALITY_AUTO;
+      LOG_DEBUG( "%s: setting default quality mode to ABR", __func__);
   }
 
   //To correcting data to middle.
@@ -537,6 +529,13 @@ void a2dp_vendor_lhdcv2_feeding_reset(void) {
       1000;
   a2dp_lhdc_encoder_cb.buf_seq = 0;
   a2dp_lhdc_encoder_cb.lhdc_feeding_state.last_frame_us = 0;
+  tA2DP_LHDC_ENCODER_PARAMS* p_encoder_params = &a2dp_lhdc_encoder_cb.lhdc_encoder_params;
+  LOG_DEBUG("%s: has_lhdc_handle %d (%d)", __func__,
+      a2dp_lhdc_encoder_cb.has_lhdc_handle,p_encoder_params->quality_mode_index);
+  if (p_encoder_params->quality_mode_index == LHDCBT_QUALITY_AUTO) {
+    if(lhdc_set_bitrate_func != NULL && a2dp_lhdc_encoder_cb.has_lhdc_handle)
+      lhdc_set_bitrate_func(a2dp_lhdc_encoder_cb.lhdc_handle, LHDCBT_QUALITY_RESET_AUTO);
+  }
   LOG_DEBUG( "%s: PCM bytes per tick %u, reset timestamp", __func__,
             a2dp_lhdc_encoder_cb.lhdc_feeding_state.bytes_per_tick);
 }

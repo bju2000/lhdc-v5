@@ -33,6 +33,7 @@
 #include "a2dp_vendor.h"
 #include "a2dp_vendor_lhdcv3_encoder.h"
 #include "bt_utils.h"
+#include "btif_av_co.h"
 #include "osi/include/log.h"
 #include "osi/include/osi.h"
 
@@ -134,7 +135,7 @@ static const tA2DP_LHDC_CIE a2dp_lhdc_source_caps = {
     A2DP_LHDCV3_CODEC_ID,   // codecId
     // sampleRate
     //(A2DP_LHDC_SAMPLING_FREQ_48000),
-    (A2DP_LHDC_SAMPLING_FREQ_44100 | A2DP_LHDC_SAMPLING_FREQ_48000 | A2DP_LHDC_SAMPLING_FREQ_88200 | A2DP_LHDC_SAMPLING_FREQ_96000),
+    (A2DP_LHDC_SAMPLING_FREQ_44100 | A2DP_LHDC_SAMPLING_FREQ_48000 | A2DP_LHDC_SAMPLING_FREQ_96000),
 	(A2DP_LHDC_SAMPLING_FREQ_48000),
     // bits_per_sample
     (BTAV_A2DP_CODEC_BITS_PER_SAMPLE_16 | BTAV_A2DP_CODEC_BITS_PER_SAMPLE_24),
@@ -638,6 +639,42 @@ bool A2DP_VendorCodecEqualsLhdcV3(const uint8_t* p_codec_info_a,
          (lhdc_cie_a.isLLSupported == lhdc_cie_b.isLLSupported);
 }
 
+// Savitech Patch - START  Offload
+int A2DP_VendorGetBitRateLhdcV3(const uint8_t* p_codec_info) {
+
+  A2dpCodecConfig* current_codec = bta_av_get_a2dp_current_codec();
+  btav_a2dp_codec_config_t codec_config_ = current_codec->getCodecConfig();
+
+  if ((codec_config_.codec_specific_1 & A2DP_LHDC_VENDOR_CMD_MASK) ==
+      A2DP_LHDC_QUALITY_MAGIC_NUM) {
+    switch ((int)(codec_config_.codec_specific_1 & 0xff)) {
+      case A2DP_LHDC_QUALITY_LOW0:
+        return 64000;
+      case A2DP_LHDC_QUALITY_LOW1:
+        return 128000;
+      case A2DP_LHDC_QUALITY_LOW2:
+        return 192000;
+      case A2DP_LHDC_QUALITY_LOW3:
+        return 256000;
+      case A2DP_LHDC_QUALITY_LOW4:
+        return 320000;
+      case A2DP_LHDC_QUALITY_LOW:
+        return 400000;
+      case A2DP_LHDC_QUALITY_MID:
+        return 600000;
+      case A2DP_LHDC_QUALITY_HIGH:
+        return 900000;
+      case A2DP_LHDC_QUALITY_ABR:
+        return 9999999;
+      case A2DP_LHDC_QUALITY_HIGH1:
+        [[fallthrough]];
+      default:
+        return -1;
+    }
+  }
+  return 400000;
+}
+// Savitech Patch - END
 
 int A2DP_VendorGetTrackSampleRateLhdcV3(const uint8_t* p_codec_info) {
   tA2DP_LHDC_CIE lhdc_cie;
@@ -675,11 +712,6 @@ int A2DP_VendorGetTrackBitsPerSampleLhdcV3(const uint8_t* p_codec_info) {
     return -1;
   }
 
-#if 0
-  return 32;
-#else
-  // TODO : Implement proc to care about bit per sample in A2DP_ParseInfoLdac()
-
   switch (lhdc_cie.bits_per_sample) {
     case BTAV_A2DP_CODEC_BITS_PER_SAMPLE_16:
       return 16;
@@ -690,7 +722,6 @@ int A2DP_VendorGetTrackBitsPerSampleLhdcV3(const uint8_t* p_codec_info) {
     case BTAV_A2DP_CODEC_BITS_PER_SAMPLE_NONE:
       return -1;
   }
-#endif
 }
 
 int A2DP_VendorGetTrackChannelCountLhdcV3(const uint8_t* p_codec_info) {
@@ -2370,12 +2401,13 @@ bool A2dpCodecConfigLhdcV3::setCodecConfig(const uint8_t* p_peer_codec_info,
 
   } else if (!result_config_cie.hasFeatureLLAC && result_config_cie.hasFeatureLHDCV4) {
     //LHDC V4 only
+    LOG_DEBUG("%s: [LHDCV4 only]", __func__);
 	if (result_config_cie.sampleRate == A2DP_LHDC_SAMPLING_FREQ_96000) {
 		if (result_config_cie.hasFeatureMinBitrate) {
 			if (quality_mode < A2DP_LHDC_QUALITY_LOW) {
 				codec_user_config_.codec_specific_1 = A2DP_LHDC_QUALITY_MAGIC_NUM | A2DP_LHDC_QUALITY_LOW;
 				quality_mode = A2DP_LHDC_QUALITY_LOW;
-				LOG_DEBUG("%s: [LHDC only]: reset Qmode (0x%x)", __func__, quality_mode);
+				LOG_DEBUG("%s: [LHDCV4 only]: reset Qmode (0x%x)", __func__, quality_mode);
 			}
 		}
 	} else {
@@ -2383,13 +2415,14 @@ bool A2dpCodecConfigLhdcV3::setCodecConfig(const uint8_t* p_peer_codec_info,
 			if (quality_mode < A2DP_LHDC_QUALITY_LOW4) {
 				codec_user_config_.codec_specific_1 = A2DP_LHDC_QUALITY_MAGIC_NUM | A2DP_LHDC_QUALITY_LOW4;
 				quality_mode = A2DP_LHDC_QUALITY_LOW4;
-				LOG_DEBUG("%s: [LHDC only]: reset Qmode (0x%x), ", __func__, quality_mode);
+				LOG_DEBUG("%s: [LHDCV4 only]: reset Qmode (0x%x), ", __func__, quality_mode);
 			}
 		}
 	}
 
   } else if (result_config_cie.hasFeatureLLAC && !result_config_cie.hasFeatureLHDCV4) {
     //LLAC only
+    LOG_DEBUG("%s: [LLAC only]", __func__);
     if (result_config_cie.sampleRate == A2DP_LHDC_SAMPLING_FREQ_96000) {
       result_config_cie.sampleRate = A2DP_LHDC_SAMPLING_FREQ_48000;
       codec_config_.sample_rate = BTAV_A2DP_CODEC_SAMPLE_RATE_48000;
@@ -2414,6 +2447,7 @@ bool A2dpCodecConfigLhdcV3::setCodecConfig(const uint8_t* p_peer_codec_info,
 
   } else if (!result_config_cie.hasFeatureLLAC && !result_config_cie.hasFeatureLHDCV4) {
     //LHDC V3 only
+    LOG_DEBUG("%s: [LHDCV3 only]", __func__);
 	if (result_config_cie.sampleRate == A2DP_LHDC_SAMPLING_FREQ_96000) {
 		if (result_config_cie.hasFeatureMinBitrate) {
 			if (quality_mode < A2DP_LHDC_QUALITY_LOW) {

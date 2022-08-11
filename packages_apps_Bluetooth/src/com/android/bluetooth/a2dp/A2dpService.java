@@ -1487,9 +1487,9 @@ public class A2dpService extends ProfileService {
 
         /************************************************
          * Savitech Patch - LHDC Extended API Start
-         ***********************************************/        
+         ***********************************************/
         @Override
-        public int getLhdcCodecExtendApiVer(BluetoothDevice device, 
+        public int getLhdcCodecExtendApiVer(BluetoothDevice device,
                 byte[] exApiVer) {
             A2dpService service = getServiceLhdc();
             if (service == null) {
@@ -1516,7 +1516,7 @@ public class A2dpService extends ProfileService {
                 return -1;
             }
             return service.getLhdcCodecExtendApiConfigAr(device, codecConfig);
-        }        
+        }
 
         @Override
         public int setLhdcCodecExtendApiConfigMeta(BluetoothDevice device,

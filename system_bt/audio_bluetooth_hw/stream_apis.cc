@@ -86,8 +86,18 @@ void out_calculate_feeding_delay_ms(const BluetoothStreamOut* out,
     //   frames_count = buffer_size / frame_size
     //   latency (sec.) = frames_count / samples_per_second (sample_rate)
     // Sync from audio_a2dp_hw to add extra delay kExtraAudioSyncMs(+200ms)
+#if 0
+    bool lowLatencySt = false;
+    // Savitech Patch - Start
+    //   LHDC_Low_Latency(non-offload)
+    lowLatencySt = out->bluetooth_output_.isLowLatencyEnabled();
+    delay_report_ms =
+        out->frames_count_ * 1000 / out->sample_rate_ + (lowLatencySt == true ? 0 : kExtraAudioSyncMs);
+    // Savitech Patch - End
+#else
     delay_report_ms =
         out->frames_count_ * 1000 / out->sample_rate_ + kExtraAudioSyncMs;
+#endif
     if (timestamp != nullptr) {
       clock_gettime(CLOCK_MONOTONIC, &absorbed_timestamp);
     }
@@ -220,6 +230,13 @@ static size_t out_get_buffer_size(const struct audio_stream* stream) {
   const auto* out = reinterpret_cast<const BluetoothStreamOut*>(stream);
   size_t buffer_size =
       out->frames_count_ * audio_stream_out_frame_size(&out->stream_out_);
+  // Savitech Patch - Start
+  //   LHDC_Low_Latency(non-offload)
+  /*
+  bool lowLatencySt = out->bluetooth_output_.isLowLatencyEnabled();
+  if (lowLatencySt) buffer_size = buffer_size/2;
+  */
+  // Savitech Patch - End
   LOG(VERBOSE) << __func__ << ": state=" << out->bluetooth_output_.GetState()
                << ", buffer_size=" << buffer_size;
   return buffer_size;

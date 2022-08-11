@@ -33,6 +33,7 @@
 #include "a2dp_vendor.h"
 #include "a2dp_vendor_lhdcv2_encoder.h"
 #include "bt_utils.h"
+#include "btif_av_co.h"
 #include "osi/include/log.h"
 #include "osi/include/osi.h"
 
@@ -55,14 +56,14 @@ static const tA2DP_LHDC_CIE a2dp_lhdc_source_caps = {
     A2DP_LHDCV2_CODEC_ID,   // codecId
     // sampleRate
     //(A2DP_LHDC_SAMPLING_FREQ_48000),
-    (A2DP_LHDC_SAMPLING_FREQ_44100 | A2DP_LHDC_SAMPLING_FREQ_48000 | A2DP_LHDC_SAMPLING_FREQ_88200 | A2DP_LHDC_SAMPLING_FREQ_96000),
+    (A2DP_LHDC_SAMPLING_FREQ_44100 | A2DP_LHDC_SAMPLING_FREQ_48000 | A2DP_LHDC_SAMPLING_FREQ_96000),
     // bits_per_sample
     (BTAV_A2DP_CODEC_BITS_PER_SAMPLE_16 | BTAV_A2DP_CODEC_BITS_PER_SAMPLE_24),
     //Channel Separation
     A2DP_LHDC_CH_SPLIT_NONE | A2DP_LHDC_CH_SPLIT_TWS,
     //Version number
     A2DP_LHDC_VER2,
-    //Target bit Rate
+    //Max target bit Rate
     A2DP_LHDC_MAX_BIT_RATE_900K,
     //LL supported ?
     false,
@@ -260,6 +261,54 @@ static void A2DP_BuildMediaPayloadHeaderLhdc(uint8_t* p, uint16_t num) {
 }
 */
 
+static bool A2DP_MaxBitRatetoQualityLevelLhdcV2(uint8_t *mode, uint8_t bitrate) {
+  if (mode == nullptr) {
+    LOG_ERROR( "%s: nullptr input", __func__);
+    return false;
+  }
+
+  switch (bitrate & A2DP_LHDC_MAX_BIT_RATE_MASK) {
+  case A2DP_LHDC_MAX_BIT_RATE_900K:
+    *mode = A2DP_LHDC_QUALITY_HIGH;
+    return true;
+  case A2DP_LHDC_MAX_BIT_RATE_500K:
+    *mode = A2DP_LHDC_QUALITY_MID;
+    return true;
+  case A2DP_LHDC_MAX_BIT_RATE_400K:
+    *mode = A2DP_LHDC_QUALITY_LOW;
+    return true;
+  }
+  return false;
+}
+
+static std::string lhdcV2_QualityModeBitRate_toString(uint8_t value) {
+  switch((int)value)
+  {
+  case A2DP_LHDC_QUALITY_ABR:
+    return "ABR";
+  case A2DP_LHDC_QUALITY_HIGH1:
+    return "HIGH 1 (1000 Kbps)";
+  case A2DP_LHDC_QUALITY_HIGH:
+    return "HIGH (900 Kbps)";
+  case A2DP_LHDC_QUALITY_MID:
+    return "MID (500 Kbps)";
+  case A2DP_LHDC_QUALITY_LOW:
+    return "LOW (400 Kbps)";
+  case A2DP_LHDC_QUALITY_LOW4:
+    return "LOW 4 (320 Kbps)";
+  case A2DP_LHDC_QUALITY_LOW3:
+    return "LOW 3 (256 Kbps)";
+  case A2DP_LHDC_QUALITY_LOW2:
+    return "LOW 2 (192 Kbps)";
+  case A2DP_LHDC_QUALITY_LOW1:
+    return "LOW 1 (128 Kbps)";
+  case A2DP_LHDC_QUALITY_LOW0:
+    return "LOW 0 (64 Kbps)";
+  default:
+    return "Unknown Bit Rate Mode";
+  }
+}
+
 bool A2DP_IsVendorSourceCodecValidLhdcV2(const uint8_t* p_codec_info) {
   tA2DP_LHDC_CIE cfg_cie;
 
@@ -372,6 +421,42 @@ bool A2DP_VendorCodecEqualsLhdcV2(const uint8_t* p_codec_info_a,
          (lhdc_cie_a.bits_per_sample == lhdc_cie_b.bits_per_sample);
 }
 
+// Savitech Patch - START  Offload
+int A2DP_VendorGetBitRateLhdcV2(const uint8_t* p_codec_info) {
+
+  A2dpCodecConfig* current_codec = bta_av_get_a2dp_current_codec();
+  btav_a2dp_codec_config_t codec_config_ = current_codec->getCodecConfig();
+
+  if ((codec_config_.codec_specific_1 & A2DP_LHDC_VENDOR_CMD_MASK) ==
+      A2DP_LHDC_QUALITY_MAGIC_NUM) {
+    switch ((int)(codec_config_.codec_specific_1 & 0xff)) {
+      case A2DP_LHDC_QUALITY_LOW0:
+        return 64000;
+      case A2DP_LHDC_QUALITY_LOW1:
+        return 128000;
+      case A2DP_LHDC_QUALITY_LOW2:
+        return 192000;
+      case A2DP_LHDC_QUALITY_LOW3:
+        return 256000;
+      case A2DP_LHDC_QUALITY_LOW4:
+        return 320000;
+      case A2DP_LHDC_QUALITY_LOW:
+        return 400000;
+      case A2DP_LHDC_QUALITY_MID:
+        return 600000;
+      case A2DP_LHDC_QUALITY_HIGH:
+        return 900000;
+      case A2DP_LHDC_QUALITY_ABR:
+        return 9999999;
+      case A2DP_LHDC_QUALITY_HIGH1:
+        [[fallthrough]];
+      default:
+        return -1;
+    }
+  }
+  return 400000;
+}
+// Savitech Patch - END
 
 int A2DP_VendorGetTrackSampleRateLhdcV2(const uint8_t* p_codec_info) {
   tA2DP_LHDC_CIE lhdc_cie;
@@ -409,11 +494,6 @@ int A2DP_VendorGetTrackBitsPerSampleLhdcV2(const uint8_t* p_codec_info) {
     return -1;
   }
 
-#if 0
-  return 32;
-#else
-  // TODO : Implement proc to care about bit per sample in A2DP_ParseInfoLdac()
-
   switch (lhdc_cie.bits_per_sample) {
     case BTAV_A2DP_CODEC_BITS_PER_SAMPLE_16:
       return 16;
@@ -424,7 +504,6 @@ int A2DP_VendorGetTrackBitsPerSampleLhdcV2(const uint8_t* p_codec_info) {
     case BTAV_A2DP_CODEC_BITS_PER_SAMPLE_NONE:
       return -1;
   }
-#endif
 }
 
 int A2DP_VendorGetTrackChannelCountLhdcV2(const uint8_t* p_codec_info) {
@@ -901,6 +980,8 @@ bool A2dpCodecConfigLhdcV2::setCodecConfig(const uint8_t* p_peer_codec_info,
   tA2DP_LHDC_CIE sink_info_cie;
   tA2DP_LHDC_CIE result_config_cie;
   uint8_t sampleRate;
+  uint8_t qualityMode = 0;
+  uint8_t bitRateQmode = 0;
   bool isLLEnabled;
   btav_a2dp_codec_bits_per_sample_t bits_per_sample;
 
@@ -1177,12 +1258,48 @@ bool A2dpCodecConfigLhdcV2::setCodecConfig(const uint8_t* p_peer_codec_info,
 
   result_config_cie.maxTargetBitrate = sink_info_cie.maxTargetBitrate;
 
-  LOG_DEBUG( "%s: Config bitrate result(0x%02x), prev(0x%02x)", __func__, result_config_cie.maxTargetBitrate, sink_info_cie.maxTargetBitrate);
+  LOG_DEBUG( "%s: max target bitrate: 0x%02x", __func__,
+      result_config_cie.maxTargetBitrate);
 
 
   result_config_cie.channelSplitMode = sink_info_cie.channelSplitMode;
   LOG_ERROR("%s: channelSplitMode = %d", __func__, result_config_cie.channelSplitMode);
 
+  // quality mode (BitRate) adjust
+  if ((codec_user_config_.codec_specific_1 & A2DP_LHDC_VENDOR_CMD_MASK) != A2DP_LHDC_QUALITY_MAGIC_NUM) {
+    codec_user_config_.codec_specific_1 = A2DP_LHDC_QUALITY_MAGIC_NUM | A2DP_LHDC_QUALITY_ABR;
+    LOG_DEBUG( "%s: tag not match, use default Mode: ABR", __func__);
+  }
+  qualityMode = (uint8_t)codec_user_config_.codec_specific_1 & A2DP_LHDC_QUALITY_MASK;
+
+  //
+  // quality mode adjust when non-ABR
+  //
+  if (qualityMode != A2DP_LHDC_QUALITY_ABR) {
+    // get corresponding quality mode of the max target bit rate
+    if (!A2DP_MaxBitRatetoQualityLevelLhdcV2(&bitRateQmode, result_config_cie.maxTargetBitrate)) {
+      LOG_ERROR( "%s: get quality mode from maxTargetBitrate error", __func__);
+      goto fail;
+    }
+    // downgrade audio quality according to the max target bit rate
+    if (qualityMode > bitRateQmode) {
+      codec_user_config_.codec_specific_1 = A2DP_LHDC_QUALITY_MAGIC_NUM | bitRateQmode;
+      qualityMode = bitRateQmode;
+      LOG_DEBUG( "%s: downgrade quality mode to 0x%02X by max target bitrate", __func__, qualityMode);
+    }
+
+    // High1(1000K) does not supported in V2, downgrade to High(900K)
+    if (qualityMode == A2DP_LHDC_QUALITY_HIGH1) {
+      LOG_DEBUG( "%s: reset non-supported quality mode %s to HIGH (900 Kbps)", __func__,
+          lhdcV2_QualityModeBitRate_toString(qualityMode).c_str());
+      codec_user_config_.codec_specific_1 = A2DP_LHDC_QUALITY_MAGIC_NUM | A2DP_LHDC_QUALITY_HIGH;
+      qualityMode = A2DP_LHDC_QUALITY_HIGH;
+    }
+  }
+
+  LOG_DEBUG( "%s: => final quality mode(0x%02X) = %s", __func__,
+      qualityMode,
+      lhdcV2_QualityModeBitRate_toString(qualityMode).c_str());
 
   if (int ret = A2DP_BuildInfoLhdcV2(AVDT_MEDIA_TYPE_AUDIO, &result_config_cie,
                          p_result_codec_config) != A2DP_SUCCESS) {

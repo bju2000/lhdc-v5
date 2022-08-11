@@ -54,6 +54,15 @@ class BluetoothAudioPort {
   // Bluetooth stack
   virtual bool LoadAudioConfig(audio_config_t* audio_cfg) const = 0;
 
+  // Savitech Patch - Start
+  //   LHDC_Low_Latency(non-offload)
+  /*
+  bool isLowLatencyEnabled() const {
+    return _lowLatencyEnabled;
+  }
+  */
+  // Savitech Patch - End
+
   // WAR to support Mono mode / 16 bits per sample
   void ForcePcmStereoToMono(bool force) {
     is_stereo_to_mono_ = force;
@@ -88,6 +97,11 @@ class BluetoothAudioPort {
     return session_type_ == SessionType_2_1::A2DP_SOFTWARE_ENCODING_DATAPATH ||
            session_type_ == SessionType_2_1::A2DP_HARDWARE_OFFLOAD_DATAPATH;
   }
+
+  // Savitech Patch - Start
+  //   LHDC_Low_Latency(non-offload)
+  //mutable bool _lowLatencyEnabled = false;
+  // Savitech Patch - End
 
  protected:
   uint16_t cookie_;

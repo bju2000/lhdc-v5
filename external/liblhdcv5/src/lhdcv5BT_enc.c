@@ -31,6 +31,8 @@ static uint32_t auto_bitrate_adjust_table_lhdcv5_192k[] = {256, 320, 400, 400, 4
 #define LHDCV5_96K_BITRATE_ELEMENTS_SIZE  (sizeof(auto_bitrate_adjust_table_lhdcv5_96k) / sizeof(uint32_t))
 #define LHDCV5_192K_BITRATE_ELEMENTS_SIZE  (sizeof(auto_bitrate_adjust_table_lhdcv5_192k) / sizeof(uint32_t))
 
+#define LHDCV5_ABR_DEFAULT_BITRATE     (LHDCV5_QUALITY_LOW)
+
 
 static const char * rate_to_string
 (
@@ -177,7 +179,7 @@ static int lhdcv5_encoder_adjust_bitrate
 
   if (lhdcBT == NULL)
   {
-    ALOGW ("%s: Handle is NULL!", __func__);
+    ALOGW ("%s: lhdcBT is NULL!", __func__);
     return LHDCV5_FRET_INVALID_HANDLE_CB;
   }
 
@@ -189,7 +191,7 @@ static int lhdcv5_encoder_adjust_bitrate
 
   if (handle->qualityStatus != LHDCV5_QUALITY_AUTO)
   {
-    ALOGW ("%s: Not ABR", __func__);
+    ALOGW ("%s: Not ABR (%d)", __func__, handle->qualityStatus);
     return LHDCV5_FRET_SUCCESS;
   }
 
@@ -569,21 +571,31 @@ int32_t lhdcv5BT_set_bitrate
   }
 
   if ((bitrate_inx < LHDCV5_QUALITY_LOW0) ||
-      (bitrate_inx > LHDCV5_QUALITY_AUTO))
+      (bitrate_inx >= LHDCV5_QUALITY_INVALID))
   {
     ALOGW ("%s: Invalid bit rate index (%u)!", __func__, bitrate_inx);
     return LHDCV5_FRET_INVALID_INPUT_PARAM;
   }
 
-  func_ret = lhdcv5_util_set_target_bitrate_inx (handle, bitrate_inx, &bitrate_inx_set, true);
+  if (bitrate_inx == LHDCV5_QUALITY_RESET_AUTO) {
+    bitrate_inx_set = LHDCV5_ABR_DEFAULT_BITRATE;
+    ALOGD ("%s: [Reset BiTrAtE] reset to bitrate (%s)", __func__, rate_to_string (bitrate_inx_set));
+    bitrate_inx = LHDCV5_ABR_DEFAULT_BITRATE;
+    // change bitrate only, not update quality index
+    func_ret = lhdcv5_util_set_target_bitrate_inx (handle, bitrate_inx, &bitrate_inx_set, false);
+  } else {
+    // also update quality index
+    func_ret = lhdcv5_util_set_target_bitrate_inx (handle, bitrate_inx, &bitrate_inx_set, true);
+  }
 
   if (func_ret != LHDCV5_FRET_SUCCESS)
   {
-    ALOGW ("%s: failed to set bit rate (%d)!", __func__, func_ret);
+    ALOGW ("%s: failed to set bitrate (%d)!", __func__, func_ret);
     return LHDCV5_FRET_ERROR;
   }
 
-  ALOGD ("%s: Update target bitrate(%s)",  __func__, rate_to_string (bitrate_inx_set));
+  ALOGD ("%s: Update target bitrate(%s)",  __func__,
+      rate_to_string (bitrate_inx_set));
 
   return LHDCV5_FRET_SUCCESS;
 }

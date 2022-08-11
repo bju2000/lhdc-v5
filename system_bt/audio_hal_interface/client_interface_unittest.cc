@@ -32,6 +32,8 @@ using ::android::hardware::bluetooth::audio::V2_0::CodecType;
 using ::android::hardware::bluetooth::audio::V2_0::LdacChannelMode;
 using ::android::hardware::bluetooth::audio::V2_0::LdacParameters;
 using ::android::hardware::bluetooth::audio::V2_0::LdacQualityIndex;
+// Savitech Patch  Offload
+//using ::android::hardware::bluetooth::audio::V2_0::Lhdcv5Parameters;
 using ::android::hardware::bluetooth::audio::V2_0::SbcAllocMethod;
 using ::android::hardware::bluetooth::audio::V2_0::SbcBlockLength;
 using ::android::hardware::bluetooth::audio::V2_0::SbcChannelMode;
@@ -121,11 +123,15 @@ constexpr ChannelModePair kChannelModePairs[3] = {
     {.hal_channel_mode_ = ChannelMode::STEREO,
      .btav_channel_mode_ = BTAV_A2DP_CODEC_CHANNEL_MODE_STEREO}};
 
+// Savitech Patch  Offload
 constexpr btav_a2dp_codec_index_t codec_indexes[] = {
     BTAV_A2DP_CODEC_INDEX_SOURCE_SBC,  BTAV_A2DP_CODEC_INDEX_SOURCE_AAC,
     BTAV_A2DP_CODEC_INDEX_SOURCE_APTX, BTAV_A2DP_CODEC_INDEX_SOURCE_APTX_HD,
-    BTAV_A2DP_CODEC_INDEX_SOURCE_LDAC, BTAV_A2DP_CODEC_INDEX_SINK_SBC,
-    BTAV_A2DP_CODEC_INDEX_SINK_AAC,    BTAV_A2DP_CODEC_INDEX_SINK_LDAC};
+    BTAV_A2DP_CODEC_INDEX_SOURCE_LDAC, BTAV_A2DP_CODEC_INDEX_SOURCE_LHDCV2,
+    BTAV_A2DP_CODEC_INDEX_SOURCE_LHDCV3, BTAV_A2DP_CODEC_INDEX_SOURCE_LHDCV5,
+    BTAV_A2DP_CODEC_INDEX_SINK_SBC,
+    BTAV_A2DP_CODEC_INDEX_SINK_AAC, BTAV_A2DP_CODEC_INDEX_SINK_LDAC,
+    BTAV_A2DP_CODEC_INDEX_SINK_LHDCV3, BTAV_A2DP_CODEC_INDEX_SINK_LHDCV5};
 constexpr uint16_t kPeerMtus[5] = {660, 663, 883, 1005, 1500};
 
 class TestSinkTransport
@@ -307,6 +313,24 @@ class BluetoothAudioClientInterfaceTest : public Test {
              ldac_config.bitsPerSample & ldac_capability.bitsPerSample);
         return is_codec_config_supported;
       }
+      // Savitech Patch - START  Offload
+      /*
+      case CodecType::LHDCV3:
+        [[fallthrough]];
+      case CodecType::LHDCV2:
+        [[fallthrough]];
+      case CodecType::LHDCV5: {
+        Lhdcv5Parameters lhdcv5_config = codec_config.config.lhdcv5Config();
+        Lhdcv5Parameters lhdcv5_capability =
+            codec_capability.capabilities.lhdcv5Capabilities();
+        is_codec_config_supported =
+            (lhdcv5_config.sampleRate & lhdcv5_capability.sampleRate &&
+             lhdcv5_config.channelMode & lhdcv5_capability.channelMode &&
+             lhdcv5_config.bitsPerSample & lhdcv5_capability.bitsPerSample);
+        return is_codec_config_supported;
+      }
+      */
+      // Savitech Patch - END
       case CodecType::APTX:
         [[fallthrough]];
       case CodecType::APTX_HD: {
@@ -648,6 +672,81 @@ TEST_F(BluetoothAudioClientInterfaceTest, StartAndEndA2dpOffloadLdacSession) {
     ASSERT_EQ(clientif_sink_->EndSession(), kClientIfReturnSuccess);
   }
 }
+
+// Savitech Patch - START  Offload
+/*
+std::vector<CodecConfiguration> Lhdcv5CodecConfigurationsGenerator() {
+  std::vector<CodecConfiguration> lhdcv5_codec_configs;
+  CodecConfiguration codec_config = {};
+  Lhdcv5QualityIndex quality_indexes[10] = {
+      Lhdcv5QualityIndex::QUALITY_LOW4, Lhdcv5QualityIndex::QUALITY_LOW3,
+      Lhdcv5QualityIndex::QUALITY_LOW2, Lhdcv5QualityIndex::QUALITY_LOW1,
+    Lhdcv5QualityIndex::QUALITY_LOW0, Lhdcv5QualityIndex::QUALITY_LOW,
+    Lhdcv5QualityIndex::QUALITY_MID, Lhdcv5QualityIndex::QUALITY_HIGH,
+    Lhdcv5QualityIndex::QUALITY_HIGH1, Lhdcv5QualityIndex::QUALITY_ABR};
+  for (auto sample_rate_pair : kSampleRatePairs) {
+    for (auto bits_per_sample_pair : kBitsPerSamplePairs) {
+      for (auto channel_mode_pair : kChannelModePairs) {
+        for (auto peer_mtu : kPeerMtus) {
+          for (auto quality_index : quality_indexes) {
+            codec_config.codecType = CodecType::LHDCV5;
+            codec_config.peerMtu = peer_mtu;
+            codec_config.isScmstEnabled = false;
+            codec_config.encodedAudioBitrate = 400000;
+            Lhdcv5Parameters lhdc = {
+                .sampleRate = sample_rate_pair.hal_sample_rate_,
+                .channelMode = ChannelMode::STEREO,
+                .qualityIndex = quality_index,
+                .bitsPerSample = bits_per_sample_pair.hal_bits_per_sample_};
+            codec_config.config.lhdcv5Config(lhdc);
+            lhdcv5_codec_configs.push_back(codec_config);
+          }  // LdacQualityIndex
+        }    // peerMtu
+      }      // ChannelMode
+    }        // BitsPerSampple
+  }          // SampleRate
+  return lhdcv5_codec_configs;
+}
+
+TEST_F(BluetoothAudioClientInterfaceTest, A2dpLhdcv5CodecOffloadingState) {
+  test_sink_transport_ =
+      new TestSinkTransport(SessionType::A2DP_HARDWARE_OFFLOAD_DATAPATH);
+  clientif_sink_ =
+      new BluetoothAudioSinkClientInterface(test_sink_transport_, nullptr);
+  auto lhdcv5_codec_configs = Lhdcv5CodecConfigurationsGenerator();
+  for (auto codec_offloading_preference :
+       CodecOffloadingPreferenceGenerator(BTAV_A2DP_CODEC_INDEX_SOURCE_LHDCV5)) {
+    UpdateOffloadingCapabilities(codec_offloading_preference.preference_);
+    for (CodecConfiguration codec_config : lhdcv5_codec_configs) {
+      if (IsCodecOffloadingSupported(codec_config) &&
+          codec_offloading_preference.is_target_codec_included_) {
+        ASSERT_TRUE(IsCodecOffloadingEnabled(codec_config));
+      } else {
+        ASSERT_FALSE(IsCodecOffloadingEnabled(codec_config));
+      }
+    }
+  }
+}
+
+TEST_F(BluetoothAudioClientInterfaceTest, StartAndEndA2dpOffloadLhdcv5Session) {
+  test_sink_transport_ =
+      new TestSinkTransport(SessionType::A2DP_HARDWARE_OFFLOAD_DATAPATH);
+  clientif_sink_ =
+      new BluetoothAudioSinkClientInterface(test_sink_transport_, nullptr);
+  AudioConfiguration audio_config = {};
+  for (CodecConfiguration codec_config : Lhdcv5CodecConfigurationsGenerator()) {
+    audio_config.codecConfig(codec_config);
+    clientif_sink_->UpdateAudioConfig(audio_config);
+    if (IsCodecOffloadingSupported(codec_config)) {
+      ASSERT_EQ(clientif_sink_->StartSession(), kClientIfReturnSuccess);
+    } else {
+      ASSERT_NE(clientif_sink_->StartSession(), kClientIfReturnSuccess);
+    }
+    ASSERT_EQ(clientif_sink_->EndSession(), kClientIfReturnSuccess);
+  }
+}
+*/
+// Savitech Patch - END
 
 std::vector<CodecConfiguration> AptxCodecConfigurationsGenerator(
     CodecType codec_type) {

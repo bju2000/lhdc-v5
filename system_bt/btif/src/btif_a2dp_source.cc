@@ -930,7 +930,7 @@ static uint32_t btif_a2dp_source_read_callback(uint8_t* p_buf, uint32_t len) {
     if (bluetooth::audio::a2dp::is_hal_2_0_enabled()) {
       bytes_read = bluetooth::audio::a2dp::read(p_buf + bytes_offset, len_read);
     } else if (a2dp_uipc != nullptr) {
-      bytes_read = UIPC_Read(*a2dp_uipc, UIPC_CH_ID_AV_AUDIO, &event, p_buf + bytes_offset, len);
+      bytes_read = UIPC_Read(*a2dp_uipc, UIPC_CH_ID_AV_AUDIO, &event, p_buf + bytes_offset, len_read);
     }
 
     // Savitech LHDC -- Low Latency Mode

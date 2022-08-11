@@ -1,12 +1,10 @@
 /*
- * lhdcv5Util.h
+ * lhdcv5_util_dec.h
  *
- *  Created on: 2022/03/18
- *      Author: jimmy chen
  */
 
-#ifndef LHDC_UTIL_H
-#define LHDC_UTIL_H
+#ifndef LHDCV5_UTIL_DEC_H
+#define LHDCV5_UTIL_DEC_H
 
 #include <stdbool.h>
 #include <stdint.h>
@@ -14,6 +12,8 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+typedef void * HANDLE_LHDCV5_BT;
 
 // Copy definition from external
 #define BTIF_BD_ADDR_SIZE    6
@@ -25,10 +25,6 @@ typedef enum {
 }LHDC_STRM_TYPE;
 
 typedef enum {
-  VERSION_2 = 200,
-  VERSION_3 = 300,
-  VERSION_4 = 400,
-  VERSION_LLAC = 500,
   VERSION_5 = 550
 }lhdc_ver_t;
 
@@ -76,23 +72,29 @@ typedef int (*LHDC_GET_BT_INFO)(savi_bt_local_info * bt_info);
 #define A2DP_LHDC_HDR_FRAME_NO_MASK 0xfc
 
 
-int32_t lhdcv5_util_init_decoder(uint32_t bitPerSample, uint32_t sampleRate, uint32_t scaleTo16Bits, lhdc_ver_t version);
-uint32_t lhdcv5_util_dec_put_data(uint8_t * pInpBuf, uint32_t NumBytes);
-uint32_t lhdcv5_util_dec_process(uint8_t * pOutBuf, uint8_t * pInput, uint32_t len);
-bool lhdcv5_util_set_license(uint8_t * licTable, LHDC_GET_BT_INFO pFunc);
-int32_t lhdcv5_util_set_license_check_period (uint8_t period);
+int32_t lhdcv5_util_init_decoder(uint32_t *ptr, uint32_t bitPerSample, uint32_t sampleRate, uint32_t scaleTo16Bits, lhdc_ver_t version);
+
+int32_t lhdcv5_util_dec_process(uint8_t * pOutBuf, uint8_t * pInput, uint32_t InLen, uint32_t *OutLen);
 char *lhdcv5_util_dec_get_version();
 
 int32_t lhdcv5_util_dec_destroy();
 
-void lhdc_register_log_cb(print_log_fp cb);
+void lhdcv5_util_dec_register_log_cb(print_log_fp cb);
 
-uint32_t lhdcv5_util_dec_get_sample_size (void);
-bool lhdcv5_util_dec_fetch_frame_info(uint8_t * frameData, lhdc_frame_Info_t * frameInfo);
+int32_t lhdcv5_util_dec_get_sample_size (uint32_t *frame_samples);
+int32_t lhdcv5_util_dec_fetch_frame_info(uint8_t *frameData, uint32_t frameDataLen, lhdc_frame_Info_t *frameInfo);
 
-uint32_t lhdcv5_util_dec_channel_selsect(lhdc_channel_t channel_type);
+int32_t lhdcv5_util_dec_channel_selsect(lhdc_channel_t channel_type);
+int32_t lhdcv5_util_dec_get_mem_req(lhdc_ver_t version, uint32_t *mem_req_bytes);
+
+//Return
+#define LHDCV5_UTIL_DEC_SUCCESS 0
+#define LHDCV5_UTIL_DEC_ERROR_NO_INIT -1
+#define LHDCV5_UTIL_DEC_ERROR_PARAM -2
+#define LHDCV5_UTIL_DEC_ERROR -3
+#define LHDCV5_UTIL_DEC_ERROR_WRONG_DEC -10
 
 #ifdef __cplusplus
 }
 #endif
-#endif /* End of LHDC_UTIL_H */
+#endif /* End of LHDCV5_UTIL_DEC_H */

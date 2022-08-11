@@ -488,7 +488,6 @@ static void a2dp_vendor_lhdcv3_encoder_update(uint16_t peer_mtu,
   }
   const uint8_t* p_codec_info = codec_info;
   btav_a2dp_codec_config_t codec_config = a2dp_codec_config->getCodecConfig();
-  //btav_a2dp_codec_config_t codec_config_user = a2dp_codec_config->getCodecUserConfig();
 
   uint32_t verCode = A2DP_VendorGetVersionLhdcV3(p_codec_info);  //LHDC V3 should 1!
 
@@ -504,12 +503,6 @@ static void a2dp_vendor_lhdcv3_encoder_update(uint16_t peer_mtu,
       // adjust non-supported quality modes and wrap to internal library used index
       if (newValue == A2DP_LHDC_QUALITY_ABR) {
         newValue = LHDCBT_QUALITY_AUTO; //9->8
-      } else if (newValue == A2DP_LHDC_QUALITY_HIGH1) {
-        // should not be here normally (re-adjusted in vendor_lhdcv3.cc), but just make a safe.
-        // High1(1000K) does not supported here, reset to High(900K)
-        newValue = LHDCBT_QUALITY_HIGH; //8->7
-        codec_config.codec_specific_1 = A2DP_LHDC_QUALITY_MAGIC_NUM | A2DP_LHDC_QUALITY_HIGH;
-        //codec_config_user.codec_specific_1 = A2DP_LHDC_QUALITY_MAGIC_NUM | A2DP_LHDC_QUALITY_HIGH;
       }
 
       if (newValue != p_encoder_params->quality_mode_index) {
@@ -519,9 +512,8 @@ static void a2dp_vendor_lhdcv3_encoder_update(uint16_t peer_mtu,
                       .c_str(), p_encoder_params->quality_mode_index);
       }
   }else {
-      p_encoder_params->quality_mode_index = LHDCBT_QUALITY_LOW;
-      codec_config.codec_specific_1 = A2DP_LHDC_QUALITY_MAGIC_NUM | A2DP_LHDC_QUALITY_LOW;
-      //codec_config_user.codec_specific_1 = A2DP_LHDC_QUALITY_MAGIC_NUM | A2DP_LHDC_QUALITY_LOW;
+      p_encoder_params->quality_mode_index = LHDCBT_QUALITY_AUTO;
+      LOG_DEBUG( "%s: setting default quality mode to ABR", __func__);
   }
 
   if (!a2dp_lhdc_encoder_cb.has_lhdc_handle) {
@@ -681,6 +673,13 @@ void a2dp_vendor_lhdcv3_feeding_reset(void) {
   a2dp_lhdc_encoder_cb.buf_seq = 0;
   a2dp_lhdc_encoder_cb.bytes_read = 0;
   a2dp_lhdc_encoder_cb.lhdc_feeding_state.last_frame_us = 0;
+  tA2DP_LHDC_ENCODER_PARAMS* p_encoder_params = &a2dp_lhdc_encoder_cb.lhdc_encoder_params;
+  if (p_encoder_params->quality_mode_index == LHDCBT_QUALITY_AUTO) {
+    if(lhdc_set_bitrate != NULL && a2dp_lhdc_encoder_cb.has_lhdc_handle) {
+      LOG_DEBUG("%s: reset ABR!", __func__);
+      lhdc_set_bitrate(a2dp_lhdc_encoder_cb.lhdc_handle, LHDCBT_QUALITY_RESET_AUTO);
+    }
+  }
   LOG_DEBUG( "%s: PCM bytes per tick %u, reset timestamp", __func__,
             a2dp_lhdc_encoder_cb.lhdc_feeding_state.bytes_per_tick);
 }
@@ -885,7 +884,7 @@ static void a2dp_lhdcV3_encode_frames(uint8_t nb_frame){
         return;
     } else {
       // NOTE: Unlike the execution path for other codecs, it is normal for
-      // LDAC to NOT write encoded data to the last buffer if there wasn't
+      // LHDC to NOT write encoded data to the last buffer if there wasn't
       // enough data to write to. That data is accumulated internally by
       // the codec and included in the next iteration. Therefore, here we
       // don't increment the "media_read_total_dropped_packets" counter.

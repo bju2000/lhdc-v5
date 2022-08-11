@@ -56,10 +56,6 @@
                 layout="@layout/preference_widget_dialog_radiobutton"/>
 
             <include
-                android:id="@+id/bluetooth_audio_codec_lhdcv1"
-                layout="@layout/preference_widget_dialog_radiobutton"/>
-
-            <include
                 android:id="@+id/bluetooth_audio_codec_lhdcv2"
                 layout="@layout/preference_widget_dialog_radiobutton"/>
 

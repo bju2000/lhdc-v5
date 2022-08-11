@@ -577,6 +577,8 @@ public class DevelopmentSettingsDashboardFragment extends RestrictedDashboardFra
                 bluetoothA2dpConfigStore));
         controllers.add(new BluetoothLHDCAudioArEffectPreferenceController(context, lifecycle,
                 bluetoothA2dpConfigStore));
+        controllers.add(new BluetoothLHDCAudioLosslessPreferenceController(context, lifecycle,
+                bluetoothA2dpConfigStore));
         // Savitech LHDC -- END
         controllers.add(new BluetoothChannelModeDialogPreferenceController(context, lifecycle,
                 bluetoothA2dpConfigStore));

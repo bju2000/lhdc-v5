@@ -10758,7 +10758,7 @@ public final class Settings {
 
         /**
          * Savitech Add - A2DP_Source_Sink_Switch
-         * Whether bluetooth A2DP is initialized as Source or Sink 
+         * Whether bluetooth A2DP is initialized as Source or Sink
          * @hide
          */
         @Readable

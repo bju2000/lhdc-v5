@@ -284,8 +284,8 @@ const char* A2DP_VendorCodecIndexStrLhdcV5Sink(void);
 bool A2DP_VendorInitCodecConfigLhdcV5Sink(AvdtpSepConfig* p_cfg);
 
 // Gets the track bitrate value for the A2DP LHDCV5 codec.
-// |p_codec_info| is a pointer to the LDAC codec_info to decode.
-// Returns the track sample rate on success, or -1 if |p_codec_info|
+// |p_codec_info| is a pointer to the LHDC codec_info to decode.
+// Returns the track bit rate on success, or -1 if |p_codec_info|
 // contains invalid codec information.
 int A2DP_VendorGetBitRateLhdcV5(const uint8_t* p_codec_info);
 
