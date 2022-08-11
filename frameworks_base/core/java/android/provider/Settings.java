@@ -5416,6 +5416,13 @@ public final class Settings {
         public static final String BLUETOOTH_ON = Global.BLUETOOTH_ON;
 
         /**
+         * Savitech Add - A2DP_Source_Sink_Switch
+         * @deprecated Use {@link android.provider.Settings.Global#BLUETOOTH_A2DP_SINK} instead
+         */
+        @Deprecated
+        public static final String BLUETOOTH_A2DP_SINK = Global.BLUETOOTH_A2DP_SINK;
+
+        /**
          * @deprecated Use {@link android.provider.Settings.Global#DATA_ROAMING} instead
          */
         @Deprecated
@@ -5696,6 +5703,7 @@ public final class Settings {
             MOVED_TO_GLOBAL.add(Settings.Global.ADB_ENABLED);
             MOVED_TO_GLOBAL.add(Settings.Global.ASSISTED_GPS_ENABLED);
             MOVED_TO_GLOBAL.add(Settings.Global.BLUETOOTH_ON);
+            MOVED_TO_GLOBAL.add(Settings.Global.BLUETOOTH_A2DP_SINK);	// Savitech Add -- A2DP_Source_Sink_Switch
             MOVED_TO_GLOBAL.add(Settings.Global.BUGREPORT_IN_POWER_MENU);
             MOVED_TO_GLOBAL.add(Settings.Global.CDMA_CELL_BROADCAST_SMS);
             MOVED_TO_GLOBAL.add(Settings.Global.CDMA_ROAMING_MODE);
@@ -6438,6 +6446,13 @@ public final class Settings {
          */
         @Deprecated
         public static final String BLUETOOTH_ON = Global.BLUETOOTH_ON;
+        
+        /**
+         * Savitech Add - A2DP_Source_Sink_Switch
+         * @deprecated Use {@link android.provider.Settings.Global#BLUETOOTH_A2DP_SINK} instead
+         */
+        @Deprecated
+        public static final String BLUETOOTH_A2DP_SINK = Global.BLUETOOTH_A2DP_SINK;
 
         /**
          * @deprecated Use {@link android.provider.Settings.Global#DATA_ROAMING} instead
@@ -10740,6 +10755,14 @@ public final class Settings {
          */
         @Readable
         public static final String BLUETOOTH_ON = "bluetooth_on";
+
+        /**
+         * Savitech Add - A2DP_Source_Sink_Switch
+         * Whether bluetooth A2DP is initialized as Source or Sink
+         * @hide
+         */
+        @Readable
+        public static final String BLUETOOTH_A2DP_SINK = "bluetooth_a2dp_sink";
 
         /**
          * CDMA Cell Broadcast SMS

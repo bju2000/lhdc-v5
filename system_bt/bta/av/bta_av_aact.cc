@@ -3198,6 +3198,17 @@ static void bta_av_offload_codec_builder(tBTA_AV_SCB* p_scb,
     case BTAV_A2DP_CODEC_INDEX_SOURCE_LDAC:
       codec_type = BTA_AV_CODEC_TYPE_LDAC;
       break;
+    // Savitech Patch - START  Offload
+    case BTAV_A2DP_CODEC_INDEX_SOURCE_LHDCV3:
+      codec_type = BTA_AV_CODEC_TYPE_LHDCV3;
+      break;
+    case BTAV_A2DP_CODEC_INDEX_SOURCE_LHDCV2:
+      codec_type = BTA_AV_CODEC_TYPE_LHDCV2;
+      break;
+    case BTAV_A2DP_CODEC_INDEX_SOURCE_LHDCV5:
+      codec_type = BTA_AV_CODEC_TYPE_LHDCV5;
+      break;
+    // Savitech Patch - END
     default:
       APPL_TRACE_ERROR("%s: Unknown Codec type ", __func__);
       return;
@@ -3231,6 +3242,14 @@ static void bta_av_offload_codec_builder(tBTA_AV_SCB* p_scb,
     case 96000:
       p_a2dp_offload->sample_rate = BTAV_A2DP_CODEC_SAMPLE_RATE_96000;
       break;
+    // Savitech Patch - START  Offload
+    case 176400:
+      p_a2dp_offload->sample_rate = BTAV_A2DP_CODEC_SAMPLE_RATE_176400;
+      break;
+    case 192000:
+      p_a2dp_offload->sample_rate = BTAV_A2DP_CODEC_SAMPLE_RATE_192000;
+      break;
+    // Savitech Patch - END
   }
   if (L2CA_GetRemoteCid(p_scb->l2c_cid, &p_a2dp_offload->l2c_rcid) == false) {
     APPL_TRACE_ERROR("%s: Failed to fetch l2c rcid", __func__);

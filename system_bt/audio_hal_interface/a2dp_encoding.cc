@@ -44,7 +44,14 @@ using ::bluetooth::audio::codec::A2dpAptxToHalConfig;
 using ::bluetooth::audio::codec::A2dpCodecToHalBitsPerSample;
 using ::bluetooth::audio::codec::A2dpCodecToHalChannelMode;
 using ::bluetooth::audio::codec::A2dpCodecToHalSampleRate;
+// Savitech Patch - Start
+//   LHDC_Low_Latency(non-offload)
+//using ::bluetooth::audio::codec::A2dpCodecToHalLhdcLowLatencyMode;
+// Savitech Patch - End
 using ::bluetooth::audio::codec::A2dpLdacToHalConfig;
+// Savitech Patch - Offload
+//using ::bluetooth::audio::codec::A2dpLhdcv5ToHalConfig;
+// Savitech Patch - End
 using ::bluetooth::audio::codec::A2dpSbcToHalConfig;
 using ::bluetooth::audio::codec::CodecConfiguration;
 
@@ -264,6 +271,25 @@ bool a2dp_get_selected_hal_codec_config(CodecConfiguration* codec_config) {
       }
       break;
     }
+    case BTAV_A2DP_CODEC_INDEX_SOURCE_LHDCV2:
+    case BTAV_A2DP_CODEC_INDEX_SOURCE_LHDCV3:
+    case BTAV_A2DP_CODEC_INDEX_SOURCE_LHDCV5:
+    case BTAV_A2DP_CODEC_INDEX_SINK_LHDCV3:
+    case BTAV_A2DP_CODEC_INDEX_SINK_LHDCV5: {
+#if 0
+      // Savitech Patch Offload
+      if (!A2dpLhdcv5ToHalConfig(codec_config, a2dp_config)) {
+        LOG(ERROR) << __func__
+                   << ": Fail to call A2dpLhdcv5ToHalConfig(), codec_type=" << current_codec.codec_type;
+        return false;
+      }
+      break;
+#else
+      // for non-offload only
+      return true;
+#endif
+      // Savitech Patch - End
+    }
     case BTAV_A2DP_CODEC_INDEX_MAX:
       [[fallthrough]];
     default:
@@ -307,6 +333,18 @@ bool a2dp_get_selected_hal_pcm_config(PcmParameters* pcm_config) {
   pcm_config->sampleRate = A2dpCodecToHalSampleRate(current_codec);
   pcm_config->bitsPerSample = A2dpCodecToHalBitsPerSample(current_codec);
   pcm_config->channelMode = A2dpCodecToHalChannelMode(current_codec);
+
+  // Savitech Patch - Start
+  //   LHDC_Low_Latency(non-offload)
+  /*
+  if (current_codec.codec_type == BTAV_A2DP_CODEC_INDEX_SOURCE_LHDCV3 ||
+      current_codec.codec_type == BTAV_A2DP_CODEC_INDEX_SOURCE_LHDCV2 ||
+      current_codec.codec_type == BTAV_A2DP_CODEC_INDEX_SOURCE_LHDCV5) {
+    pcm_config->isLowLatencyEnabled = A2dpCodecToHalLhdcLowLatencyMode(current_codec);
+  }
+  */
+  // Savitech Patch - End
+
   return (pcm_config->sampleRate != SampleRate::RATE_UNKNOWN &&
           pcm_config->bitsPerSample != BitsPerSample::BITS_UNKNOWN &&
           pcm_config->channelMode != ChannelMode::UNKNOWN);

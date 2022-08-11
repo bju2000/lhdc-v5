@@ -63,6 +63,7 @@ public class GlobalSettings {
         Settings.Global.LOW_POWER_MODE_STICKY_AUTO_DISABLE_ENABLED,
         Settings.Global.LOW_POWER_MODE_STICKY_AUTO_DISABLE_LEVEL,
         Settings.Global.BLUETOOTH_ON,
+        Settings.Global.BLUETOOTH_A2DP_SINK, //Savitech Add - A2DP_Source_Sink_Switch
         Settings.Global.PRIVATE_DNS_MODE,
         Settings.Global.PRIVATE_DNS_SPECIFIER,
         Settings.Global.SOFT_AP_TIMEOUT_ENABLED,

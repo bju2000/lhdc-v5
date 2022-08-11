@@ -30,6 +30,10 @@ using ::android::hardware::bluetooth::audio::V2_0::AacVariableBitRate;
 using ::android::hardware::bluetooth::audio::V2_0::AptxParameters;
 using ::android::hardware::bluetooth::audio::V2_0::BitsPerSample;
 using ::android::hardware::bluetooth::audio::V2_0::ChannelMode;
+// Savitech Patch - Start
+//   LHDC_Low_Latency(non-offload)
+//using ::android::hardware::bluetooth::audio::V2_0::LhdcLowLatencyEn;
+// Savitech Patch - End
 using ::android::hardware::bluetooth::audio::V2_0::CodecType;
 using ::android::hardware::bluetooth::audio::V2_0::LdacChannelMode;
 using ::android::hardware::bluetooth::audio::V2_0::LdacParameters;
@@ -46,12 +50,18 @@ static const PcmParameters kDefaultSoftwarePcmCapabilities = {
     .sampleRate = static_cast<SampleRate>(
         SampleRate::RATE_44100 | SampleRate::RATE_48000 |
         SampleRate::RATE_88200 | SampleRate::RATE_96000 |
+        SampleRate::RATE_192000 |
         SampleRate::RATE_16000 | SampleRate::RATE_24000),
     .channelMode =
         static_cast<ChannelMode>(ChannelMode::MONO | ChannelMode::STEREO),
     .bitsPerSample = static_cast<BitsPerSample>(BitsPerSample::BITS_16 |
                                                 BitsPerSample::BITS_24 |
-                                                BitsPerSample::BITS_32)};
+                                                BitsPerSample::BITS_32),
+    // Savitech Patch - Start
+    //   LHDC_Low_Latency(non-offload)
+    //.isLowLatencyEnabled = static_cast<LhdcLowLatencyEn>(LhdcLowLatencyEn::Disabled | LhdcLowLatencyEn::Disabled),
+    // Savitech Patch - End
+};
 
 // Default Supported Codecs
 // SBC: mSampleRate:(44100), mBitsPerSample:(16), mChannelMode:(MONO|STEREO)
@@ -342,6 +352,7 @@ bool IsSoftwarePcmConfigurationValid(const PcmParameters& pcm_config) {
        pcm_config.sampleRate != SampleRate::RATE_48000 &&
        pcm_config.sampleRate != SampleRate::RATE_88200 &&
        pcm_config.sampleRate != SampleRate::RATE_96000 &&
+       pcm_config.sampleRate != SampleRate::RATE_192000 &&
        pcm_config.sampleRate != SampleRate::RATE_16000 &&
        pcm_config.sampleRate != SampleRate::RATE_24000) ||
       (pcm_config.bitsPerSample != BitsPerSample::BITS_16 &&

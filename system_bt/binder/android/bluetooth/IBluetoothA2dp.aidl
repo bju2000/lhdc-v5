@@ -90,4 +90,17 @@ interface IBluetoothA2dp {
     boolean setBufferLengthMillis(int codec, int size, in AttributionSource attributionSource);
     @JavaPassthrough(annotation="@android.annotation.RequiresPermission(android.Manifest.permission.BLUETOOTH_CONNECT)")
     int getPriority(in BluetoothDevice device, in AttributionSource attributionSource);
+
+    //Savitech LHDC EXT API -- START
+    //  get revision of the API
+    int getLhdcCodecExtendApiVer(in BluetoothDevice device, inout byte[] exApiVer);
+    //  get/set config-type APIs
+    int setLhdcCodecExtendApiConfigAr(in BluetoothDevice device, in byte[] codecConfig);
+    int getLhdcCodecExtendApiConfigAr(in BluetoothDevice device, inout byte[] codecConfig);
+    int setLhdcCodecExtendApiConfigMeta(in BluetoothDevice device, in byte[] codecConfig);
+    int getLhdcCodecExtendApiConfigMeta(in BluetoothDevice device, inout byte[] codecConfig);
+    int getLhdcCodecExtendApiConfigA2dpCodecSpecific(in BluetoothDevice device, inout byte[] codecConfig);
+    //  set data-type APIs
+    oneway void setLhdcCodecExtendApiDataGyro2D(in BluetoothDevice device, in byte[] codecData);
+    //Savitech LHDC EXT API -- END
 }

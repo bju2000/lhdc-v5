@@ -8628,7 +8628,14 @@ package android.bluetooth {
     method @RequiresPermission(android.Manifest.permission.BLUETOOTH_CONNECT) public java.util.List<android.bluetooth.BluetoothDevice> getConnectedDevices();
     method @RequiresPermission(android.Manifest.permission.BLUETOOTH_CONNECT) public int getConnectionState(android.bluetooth.BluetoothDevice);
     method @RequiresPermission(android.Manifest.permission.BLUETOOTH_CONNECT) public java.util.List<android.bluetooth.BluetoothDevice> getDevicesMatchingConnectionStates(int[]);
+    method @Nullable public int getLhdcCodecExtendApiConfigA2dpCodecSpecific(@NonNull android.bluetooth.BluetoothDevice, @NonNull byte[]);
+    method @Nullable public int getLhdcCodecExtendApiConfigAr(@NonNull android.bluetooth.BluetoothDevice, @NonNull byte[]);
+    method @Nullable public int getLhdcCodecExtendApiConfigMeta(@NonNull android.bluetooth.BluetoothDevice, @NonNull byte[]);
+    method @Nullable public int getLhdcCodecExtendApiVer(@NonNull android.bluetooth.BluetoothDevice, @NonNull byte[]);
     method @RequiresPermission(android.Manifest.permission.BLUETOOTH_CONNECT) public boolean isA2dpPlaying(android.bluetooth.BluetoothDevice);
+    method @Nullable public int setLhdcCodecExtendApiConfigAr(@NonNull android.bluetooth.BluetoothDevice, @NonNull byte[]);
+    method @Nullable public int setLhdcCodecExtendApiConfigMeta(@NonNull android.bluetooth.BluetoothDevice, @NonNull byte[]);
+    method @Nullable public void setLhdcCodecExtendApiDataGyro2D(@NonNull android.bluetooth.BluetoothDevice, @NonNull byte[]);
     field @RequiresPermission(android.Manifest.permission.BLUETOOTH_CONNECT) public static final String ACTION_CONNECTION_STATE_CHANGED = "android.bluetooth.a2dp.profile.action.CONNECTION_STATE_CHANGED";
     field @RequiresPermission(android.Manifest.permission.BLUETOOTH_CONNECT) public static final String ACTION_PLAYING_STATE_CHANGED = "android.bluetooth.a2dp.profile.action.PLAYING_STATE_CHANGED";
     field public static final int STATE_NOT_PLAYING = 11; // 0xb
@@ -35392,6 +35399,7 @@ package android.provider {
     field @Deprecated public static final String ALLOW_MOCK_LOCATION = "mock_location";
     field public static final String ANDROID_ID = "android_id";
     field @Deprecated public static final String BACKGROUND_DATA = "background_data";
+    field @Deprecated public static final String BLUETOOTH_A2DP_SINK = "bluetooth_a2dp_sink";
     field @Deprecated public static final String BLUETOOTH_ON = "bluetooth_on";
     field public static final android.net.Uri CONTENT_URI;
     field @Deprecated public static final String DATA_ROAMING = "data_roaming";
@@ -35486,6 +35494,7 @@ package android.provider {
     field @Deprecated public static final String ANIMATOR_DURATION_SCALE = "animator_duration_scale";
     field @Deprecated public static final String AUTO_TIME = "auto_time";
     field @Deprecated public static final String AUTO_TIME_ZONE = "auto_time_zone";
+    field @Deprecated public static final String BLUETOOTH_A2DP_SINK = "bluetooth_a2dp_sink";
     field public static final String BLUETOOTH_DISCOVERABILITY = "bluetooth_discoverability";
     field public static final String BLUETOOTH_DISCOVERABILITY_TIMEOUT = "bluetooth_discoverability_timeout";
     field @Deprecated public static final String BLUETOOTH_ON = "bluetooth_on";

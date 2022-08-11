@@ -32,6 +32,7 @@ typedef struct {
   AAudioStream* stream;
   int bitsPerSample;
   int channelCount;
+  aaudio_format_t format;
   float* buffer;
   size_t bufferLength;
 } BtifAvrcpAudioTrack;
@@ -41,6 +42,7 @@ FILE* outputPcmSampleFile;
 char outputFilename[50] = "/data/misc/bluedroid/output_sample.pcm";
 #endif
 
+
 void* BtifAvrcpAudioTrackCreate(int trackFreq, int bitsPerSample,
                                 int channelCount) {
   LOG_VERBOSE("%s Track.cpp: btCreateTrack freq %d bps %d channel %d ",
@@ -48,9 +50,13 @@ void* BtifAvrcpAudioTrackCreate(int trackFreq, int bitsPerSample,
 
   AAudioStreamBuilder* builder;
   AAudioStream* stream;
+  aaudio_format_t format;
+
   aaudio_result_t result = AAudio_createStreamBuilder(&builder);
   AAudioStreamBuilder_setSampleRate(builder, trackFreq);
-  AAudioStreamBuilder_setFormat(builder, AAUDIO_FORMAT_PCM_FLOAT);
+
+  format = AAUDIO_FORMAT_PCM_FLOAT;
+  AAudioStreamBuilder_setFormat(builder, format);
   AAudioStreamBuilder_setChannelCount(builder, channelCount);
   AAudioStreamBuilder_setSessionId(builder, AAUDIO_SESSION_ID_ALLOCATE);
   AAudioStreamBuilder_setPerformanceMode(builder,
@@ -64,6 +70,7 @@ void* BtifAvrcpAudioTrackCreate(int trackFreq, int bitsPerSample,
   trackHolder->stream = stream;
   trackHolder->bitsPerSample = bitsPerSample;
   trackHolder->channelCount = channelCount;
+  trackHolder->format = format;
   trackHolder->bufferLength =
       trackHolder->channelCount * AAudioStream_getBufferSizeInFrames(stream);
   trackHolder->buffer = new float[trackHolder->bufferLength]();
@@ -71,6 +78,7 @@ void* BtifAvrcpAudioTrackCreate(int trackFreq, int bitsPerSample,
 #if (DUMP_PCM_DATA == TRUE)
   outputPcmSampleFile = fopen(outputFilename, "ab");
 #endif
+
   return (void*)trackHolder;
 }
 
@@ -152,7 +160,7 @@ static size_t transcodeQ15ToFloat(uint8_t* buffer, size_t length,
                                   BtifAvrcpAudioTrack* trackHolder) {
   size_t sampleSize = sampleSizeFor(trackHolder);
   size_t i = 0;
-  for (; i <= length / sampleSize; i++) {
+  for (; i < length / sampleSize; i++) {
     trackHolder->buffer[i] = ((int16_t*)buffer)[i] * kScaleQ15ToFloat;
   }
   return i * sampleSize;
@@ -162,9 +170,12 @@ static size_t transcodeQ23ToFloat(uint8_t* buffer, size_t length,
                                   BtifAvrcpAudioTrack* trackHolder) {
   size_t sampleSize = sampleSizeFor(trackHolder);
   size_t i = 0;
-  for (; i <= length / sampleSize; i++) {
+  for (; i < length / sampleSize; i++) {
     size_t offset = i * sampleSize;
-    int32_t sample = *((int32_t*)(buffer + offset - 1)) & 0x00FFFFFF;
+    //int32_t sample = *((int32_t*)(buffer + offset - 1)) & 0x00FFFFFF;
+    // FIXME: out of range memory access at buffer[-1]
+    int32_t sample = *((int32_t*)(buffer + offset - 1)) & 0xFFFFFF00;
+    sample = sample >> 8;
     trackHolder->buffer[i] = sample * kScaleQ23ToFloat;
   }
   return i * sampleSize;
@@ -172,9 +183,9 @@ static size_t transcodeQ23ToFloat(uint8_t* buffer, size_t length,
 
 static size_t transcodeQ31ToFloat(uint8_t* buffer, size_t length,
                                   BtifAvrcpAudioTrack* trackHolder) {
-  size_t sampleSize = sampleSizeFor(trackHolder);
+  size_t sampleSize = sampleSizeFor(trackHolder); //4
   size_t i = 0;
-  for (; i <= length / sampleSize; i++) {
+  for (; i < length / sampleSize; i++) {
     trackHolder->buffer[i] = ((int32_t*)buffer)[i] * kScaleQ31ToFloat;
   }
   return i * sampleSize;
@@ -210,14 +221,19 @@ int BtifAvrcpAudioTrackWriteData(void* handle, void* audioBuffer,
   size_t sampleSize = sampleSizeFor(trackHolder);
   int transcodedCount = 0;
   do {
+    // only PCM float
+    CHECK(trackHolder->format == AAUDIO_FORMAT_PCM_FLOAT);
+
     transcodedCount +=
         transcodeToPcmFloat(((uint8_t*)audioBuffer) + transcodedCount,
                             bufferLength - transcodedCount, trackHolder);
 
+    // FIXME: should return status not number of frames
     retval = AAudioStream_write(
         trackHolder->stream, trackHolder->buffer,
         transcodedCount / (sampleSize * trackHolder->channelCount),
         kTimeoutNanos);
+
     LOG_VERBOSE("%s Track.cpp: btWriteData len = %d ret = %d", __func__,
                 bufferLength, retval);
   } while (transcodedCount < bufferLength);

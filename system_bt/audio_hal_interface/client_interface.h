@@ -43,6 +43,10 @@ using AudioConfiguration_2_1 =
     ::android::hardware::bluetooth::audio::V2_1::AudioConfiguration;
 using ::android::hardware::bluetooth::audio::V2_0::BitsPerSample;
 using ::android::hardware::bluetooth::audio::V2_0::ChannelMode;
+// Savitech Patch - Start
+//   LHDC_Low_Latency(non-offload)
+//using ::vendor::mediatek::hardware::bluetooth::audio::V2_0::LhdcLowLatencyEn;
+// Savitech Patch - End
 using IBluetoothAudioProvider =
     ::android::hardware::bluetooth::audio::V2_0::IBluetoothAudioProvider;
 using IBluetoothAudioProvider_2_1 =
@@ -221,7 +225,12 @@ class BluetoothAudioClientInterface {
   static constexpr PcmParameters kInvalidPcmConfiguration = {
       .sampleRate = SampleRate::RATE_UNKNOWN,
       .channelMode = ChannelMode::UNKNOWN,
-      .bitsPerSample = BitsPerSample::BITS_UNKNOWN};
+      .bitsPerSample = BitsPerSample::BITS_UNKNOWN,
+      // Savitech Patch - Start
+      //   LHDC_Low_Latency(non-offload)
+      //.isLowLatencyEnabled = LhdcLowLatencyEn::Disabled,
+      // Savitech Patch - End
+  };
 
  protected:
   mutable std::mutex internal_mutex_;

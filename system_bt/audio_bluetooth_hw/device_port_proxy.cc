@@ -37,6 +37,10 @@ using ::android::bluetooth::audio::BluetoothAudioSessionControl_2_1;
 using ::android::hardware::bluetooth::audio::V2_0::BitsPerSample;
 using ::android::hardware::bluetooth::audio::V2_0::ChannelMode;
 using ::android::hardware::bluetooth::audio::V2_0::PcmParameters;
+// Savitech Patch - Start
+//   LHDC_Low_Latency(non-offload)
+//using ::android::hardware::bluetooth::audio::V2_0::LhdcLowLatencyEn;
+// Savitech Patch - End
 using SampleRate = ::android::hardware::bluetooth::audio::V2_0::SampleRate;
 using SampleRate_2_1 = ::android::hardware::bluetooth::audio::V2_1::SampleRate;
 using BluetoothAudioStatus =
@@ -107,6 +111,22 @@ audio_format_t BitsPerSampleToAudioFormat(BitsPerSample bits_per_sample) {
       return kBluetoothDefaultAudioFormatBitsPerSample;
   }
 }
+
+// Savitech Patch - Start
+//   LHDC_Low_Latency(non-offload)
+/*
+bool isLhdcLowLatencyToAudioFormat(LhdcLowLatencyEn low_latency_enabled) {
+  switch (low_latency_enabled) {
+    case LhdcLowLatencyEn::Enabled:
+      return true;
+    case LhdcLowLatencyEn::Disabled:
+      return false;
+    default:
+      return kBluetoothDefaultAudioFormatLhdcLowLatency;
+  }
+}
+*/
+// Savitech Patch - End
 
 // The maximum time to wait in std::condition_variable::wait_for()
 constexpr unsigned int kMaxWaitingTimeMs = 4500;
@@ -320,6 +340,10 @@ bool BluetoothAudioPortOut::LoadAudioConfig(audio_config_t* audio_cfg) const {
            ? AUDIO_CHANNEL_OUT_STEREO
            : OutputChannelModeToAudioFormat(pcm_cfg.channelMode));
   audio_cfg->format = BitsPerSampleToAudioFormat(pcm_cfg.bitsPerSample);
+  // Savitech Patch - Start
+  //   LHDC_Low_Latency(non-offload)
+  //_lowLatencyEnabled = isLhdcLowLatencyToAudioFormat(pcm_cfg.isLowLatencyEnabled);
+  // Savitech Patch - End
   return true;
 }
 

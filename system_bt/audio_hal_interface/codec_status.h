@@ -28,6 +28,10 @@ namespace codec {
 
 using ::android::hardware::bluetooth::audio::V2_0::BitsPerSample;
 using ::android::hardware::bluetooth::audio::V2_0::ChannelMode;
+// Savitech Patch - Start
+//   LHDC_Low_Latency(non-offload)
+//using ::vendor::mediatek::hardware::bluetooth::audio::V2_0::LhdcLowLatencyEn;
+// Savitech Patch - End
 using ::android::hardware::bluetooth::audio::V2_0::CodecConfiguration;
 using ::android::hardware::bluetooth::audio::V2_0::SampleRate;
 
@@ -39,6 +43,13 @@ BitsPerSample A2dpCodecToHalBitsPerSample(
     const btav_a2dp_codec_config_t& a2dp_codec_config);
 ChannelMode A2dpCodecToHalChannelMode(
     const btav_a2dp_codec_config_t& a2dp_codec_config);
+// Savitech Patch - Start
+//   LHDC_Low_Latency(non-offload)
+/*
+LhdcLowLatencyEn A2dpCodecToHalLhdcLowLatencyMode(
+    const btav_a2dp_codec_config_t& a2dp_codec_config);
+    */
+// Savitech Patch - End
 
 bool A2dpSbcToHalConfig(CodecConfiguration* codec_config,
                         A2dpCodecConfig* a2dp_config);
@@ -48,7 +59,10 @@ bool A2dpAptxToHalConfig(CodecConfiguration* codec_config,
                          A2dpCodecConfig* a2dp_config);
 bool A2dpLdacToHalConfig(CodecConfiguration* codec_config,
                          A2dpCodecConfig* a2dp_config);
-
+// Savitech Patch - START  Offload
+bool A2dpLhdcv5ToHalConfig(CodecConfiguration* codec_config,
+                         A2dpCodecConfig* a2dp_config);
+// Savitech Patch - END
 bool UpdateOffloadingCapabilities(
     const std::vector<btav_a2dp_codec_config_t>& framework_preference);
 // Check whether this codec is supported by the audio HAL and is allowed to use

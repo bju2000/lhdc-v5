@@ -77,6 +77,7 @@
 
 #ifndef BTA_AV_SINK_INCLUDED
 #define BTA_AV_SINK_INCLUDED FALSE
+//#define BTA_AV_SINK_INCLUDED TRUE   // Savitech -- Enable A2DP Sink
 #endif
 
 #ifndef BTA_DISABLE_DELAY
@@ -813,7 +814,7 @@
 
 /* Number of simultaneous stream endpoints. */
 #ifndef AVDT_NUM_SEPS
-#define AVDT_NUM_SEPS 6
+#define AVDT_NUM_SEPS 14    //Savitech LHDC
 #endif
 
 /* Number of transport channels setup by AVDT for all media streams */

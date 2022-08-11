@@ -232,6 +232,23 @@ static void btif_a2dp_get_codec_configuration(
       p_codec_info->codecSpecific.ldacData.bitrateIndex =
           a2dp_offload.codec_info[6];
       break;
+    // Savitech Patch - START  Offload
+    case BTAV_A2DP_CODEC_INDEX_SOURCE_LHDCV3:
+      p_codec_info->codecType =
+          (::android::hardware::bluetooth::a2dp::V1_0::CodecType)
+          BTA_AV_CODEC_TYPE_LHDCV3;
+      break;
+    case BTAV_A2DP_CODEC_INDEX_SOURCE_LHDCV2:
+      p_codec_info->codecType =
+          (::android::hardware::bluetooth::a2dp::V1_0::CodecType)
+          BTA_AV_CODEC_TYPE_LHDCV2;
+      break;
+    case BTAV_A2DP_CODEC_INDEX_SOURCE_LHDCV5:
+      p_codec_info->codecType =
+          (::android::hardware::bluetooth::a2dp::V1_0::CodecType)
+          BTA_AV_CODEC_TYPE_LHDCV5;
+      break;
+    // Savitech Patch - END
     default:
       APPL_TRACE_ERROR("%s: Unknown Codec type :%d ", __func__,
                        codec_config.codec_type);

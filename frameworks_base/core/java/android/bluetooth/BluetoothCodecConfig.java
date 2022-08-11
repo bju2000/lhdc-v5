@@ -46,6 +46,9 @@ public final class BluetoothCodecConfig implements Parcelable {
             SOURCE_CODEC_TYPE_APTX,
             SOURCE_CODEC_TYPE_APTX_HD,
             SOURCE_CODEC_TYPE_LDAC,
+            SOURCE_CODEC_TYPE_LHDCV3,
+            SOURCE_CODEC_TYPE_LHDCV2,
+            SOURCE_CODEC_TYPE_LHDCV5,
             SOURCE_CODEC_TYPE_MAX,
             SOURCE_CODEC_TYPE_INVALID
     })
@@ -67,8 +70,19 @@ public final class BluetoothCodecConfig implements Parcelable {
     @UnsupportedAppUsage
     public static final int SOURCE_CODEC_TYPE_LDAC = 4;
 
+    // Savitech LHDC -- START
     @UnsupportedAppUsage
-    public static final int SOURCE_CODEC_TYPE_MAX = 5;
+    public static final int SOURCE_CODEC_TYPE_LHDCV3 = 5;
+
+    @UnsupportedAppUsage
+    public static final int SOURCE_CODEC_TYPE_LHDCV2 = 6;
+
+    @UnsupportedAppUsage
+    public static final int SOURCE_CODEC_TYPE_LHDCV5 = 7;
+    // Savitech LHDC -- END
+
+    @UnsupportedAppUsage
+    public static final int SOURCE_CODEC_TYPE_MAX = 8;
 
     @UnsupportedAppUsage
     public static final int SOURCE_CODEC_TYPE_INVALID = 1000 * 1000;
@@ -403,6 +417,13 @@ public final class BluetoothCodecConfig implements Parcelable {
                 return "aptX HD";
             case SOURCE_CODEC_TYPE_LDAC:
                 return "LDAC";
+            // Savitech LHDC -- START
+            case SOURCE_CODEC_TYPE_LHDCV2:
+                return "LHDC V2";
+            case SOURCE_CODEC_TYPE_LHDCV3:
+                return "LHDC V3";
+            case SOURCE_CODEC_TYPE_LHDCV5:
+                return "LHDC V5";
             case SOURCE_CODEC_TYPE_INVALID:
                 return "INVALID CODEC";
             default:
@@ -598,7 +619,10 @@ public final class BluetoothCodecConfig implements Parcelable {
     public boolean sameAudioFeedingParameters(BluetoothCodecConfig other) {
         return (other != null && other.mSampleRate == mSampleRate
                 && other.mBitsPerSample == mBitsPerSample
-                && other.mChannelMode == mChannelMode);
+                && other.mChannelMode == mChannelMode
+                && other.mCodecSpecific1 == mCodecSpecific1
+                && other.mCodecSpecific2 == mCodecSpecific2
+                && other.mCodecSpecific3 == mCodecSpecific3);
     }
 
     /**
@@ -650,6 +674,16 @@ public final class BluetoothCodecConfig implements Parcelable {
             case SOURCE_CODEC_TYPE_AAC:
             case SOURCE_CODEC_TYPE_LDAC:
                 if (mCodecSpecific1 != other.mCodecSpecific1) {
+                    return false;
+                }
+                return true;
+            // LHDC: Playback Quality at CodecSpecific1, Low Latency at CodecSpecific2; other feature flags at CodecSpecific3.
+            case SOURCE_CODEC_TYPE_LHDCV2:
+            case SOURCE_CODEC_TYPE_LHDCV3:
+            case SOURCE_CODEC_TYPE_LHDCV5:
+                if (mCodecSpecific1 != other.mCodecSpecific1 ||
+                    mCodecSpecific2 != other.mCodecSpecific2 ||
+                    mCodecSpecific3 != other.mCodecSpecific3) {
                     return false;
                 }
                 // fall through
